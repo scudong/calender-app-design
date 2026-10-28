@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpenIcon, CalendarHeartIcon, KeyboardIcon, LifeBuoyIcon } from "lucide-react";
+import { BookOpenIcon, BookTextIcon, CalendarHeartIcon, KeyboardIcon, LifeBuoyIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,12 @@ function HelpMenu() {
         <TooltipContent>{t("Help")}</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="end" sideOffset={8} className="w-56">
+        <DropdownMenuItem asChild>
+          <Link href="/guide">
+            <BookTextIcon /> {t("User guide")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => openOverlay({ kind: "shortcuts" })}>
           <KeyboardIcon /> {t("Keyboard shortcuts")}
           <DropdownMenuShortcut>?</DropdownMenuShortcut>

@@ -19,7 +19,7 @@ export function InvoiceDeepLink() {
     if (found) {
       useInvoiceUi.getState().view(openId);
       router.replace("/invoice", { scroll: false });
-    } else if (useAppStore.persist.hasHydrated()) {
+    } else {
       toast.error(t("Invoice not found"), { description: t("It may have been deleted.") });
       router.replace("/invoice", { scroll: false });
     }

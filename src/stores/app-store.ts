@@ -2,11 +2,10 @@
 
 import { toast } from "sonner";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
 import { formatShort, rangeKeys } from "@/lib/dates";
 import { t, translateData, type Lang } from "@/lib/i18n";
 import { durationLabel, LEAVE_COLORS, WORKDAY_MINUTES, workingDays } from "@/lib/leave";
-import { createSeed, STATE_VERSION } from "@/lib/seed";
+import { createSeed } from "@/lib/seed";
 import type {
   AppNotification,
   AppState,
@@ -121,26 +120,6 @@ function eventsForRequest(req: LeaveRequest): CalEvent[] {
   }));
 }
 
-// localStorage throws when the ~5MB quota is full (e.g. large uploaded
-// documents). Keep the app working in memory and say so once.
-let warnedQuota = false;
-const safeLocalStorage = {
-  getItem: (name: string) => localStorage.getItem(name),
-  removeItem: (name: string) => localStorage.removeItem(name),
-  setItem: (name: string, value: string) => {
-    try {
-      localStorage.setItem(name, value);
-      warnedQuota = false;
-    } catch {
-      if (warnedQuota) return;
-      warnedQuota = true;
-      toast.error(t("Browser storage is full"), {
-        description: t("Your latest changes won't survive a reload. Remove some uploaded documents to free space."),
-      });
-    }
-  },
-};
-
 /** Demo data is authored in English; this returns a copy for the given UI language. */
 function seedFor(lang: Lang) {
   return translateData(createSeed(), "en", lang);
@@ -247,9 +226,7 @@ export function redo(): string | null {
   return entry.label;
 }
 
-export const useAppStore = create<AppStore>()(
-  persist(
-    (rawSet, get) => {
+export const useAppStore = create<AppStore>()((rawSet, get) => {
       // Records history for any update that changes tracked data.
       const set = ((partial: unknown, replace?: boolean) => {
         const state = get();
@@ -531,38 +508,7 @@ export const useAppStore = create<AppStore>()(
         toast.success(t("Demo data restored"));
       },
     };
-    },
-    {
-      name: "calendar-app:state",
-      version: STATE_VERSION,
-      storage: createJSONStorage(() => safeLocalStorage),
-      // Hydrate after mount so the server-rendered markup (the seed) matches.
-      skipHydration: true,
-      migrate: (persisted, version) => {
-        const s = persisted as AppState;
-        // v3: the main workspace is "Kargul Workspace" (was "Workspace", then "Kargul").
-        if (version < 3) {
-          s.workspaces = s.workspaces.map((w) =>
-            w.id === "ws-main" && (w.name === "Workspace" || w.name === "Kargul") ? { ...w, name: "Kargul Workspace" } : w,
-          );
-        }
-        // v4: the UI ships in Chinese by default; older stores have no language
-        // and hold English demo content.
-        if (version < 4) {
-          const lang = s.settings.language ?? "zh";
-          s.settings = { ...s.settings, language: lang };
-          Object.assign(s, translateData(dataSlice(s), "en", lang));
-        }
-        return { ...s, version: STATE_VERSION };
-      },
-      partialize: (s) => {
-        const data: Partial<AppStore> = {};
-        for (const [k, v] of Object.entries(s)) if (typeof v !== "function") (data as Record<string, unknown>)[k] = v;
-        return data as AppState;
-      },
-    },
-  ),
-);
+});
 
 /** Read-only selector for the active workspace name. */
 export const selectWorkspaceName = (s: AppStore) =>

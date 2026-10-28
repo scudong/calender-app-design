@@ -16,10 +16,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
+import { logout } from "@/lib/api";
 import { NAV_GROUPS, SETTINGS_ITEM, type NavItem } from "@/lib/nav";
 import { useT } from "@/hooks/use-i18n";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app-store";
+import { useAuthStore } from "@/stores/auth-store";
 
 const noopSubscribe = () => () => {};
 
@@ -71,6 +73,7 @@ function ThemeRow() {
 
 function AccountMenu() {
   const profile = useAppStore((s) => s.profile);
+  const setUser = useAuthStore((s) => s.setUser);
   const t = useT();
   return (
     <DropdownMenu>
@@ -106,7 +109,15 @@ function AccountMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           variant="destructive"
-          onSelect={() => toast(t("Signed out"), { description: t("This is a demo — your data stays in this browser.") })}
+          onSelect={async () => {
+            try {
+              await logout();
+            } catch {
+              /* the cookie may already be gone */
+            }
+            setUser(null);
+            toast(t("Signed out"), { description: t("You can sign in again with your email.") });
+          }}
         >
           <LogOutIcon /> {t("Sign out")}
         </DropdownMenuItem>
@@ -119,19 +130,25 @@ function AccountMenu() {
 export function SidebarBody({ className }: { className?: string }) {
   const pathname = usePathname();
   const t = useT();
+  const role = useAuthStore((s) => s.user?.role);
+  const canSee = (item: NavItem) => !item.requiresRole || role === "admin" || role === "manager";
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col justify-between gap-6 overflow-y-auto p-3 [scrollbar-width:none]", className)}>
       <nav aria-label={t("Primary")} className="flex w-full flex-col gap-4">
-        {NAV_GROUPS.map((group) => (
-          <div key={group.label} className="flex w-full flex-col gap-0.5">
-            <SectionLabel>{t(group.label)}</SectionLabel>
-            {group.items.map((item) => (
-              <NavLink key={item.href} item={item} active={isActive(item.href)} />
-            ))}
-          </div>
-        ))}
+        {NAV_GROUPS.map((group) => {
+          const items = group.items.filter(canSee);
+          if (!items.length) return null;
+          return (
+            <div key={group.label} className="flex w-full flex-col gap-0.5">
+              <SectionLabel>{t(group.label)}</SectionLabel>
+              {items.map((item) => (
+                <NavLink key={item.href} item={item} active={isActive(item.href)} />
+              ))}
+            </div>
+          );
+        })}
       </nav>
       <div className="flex w-full flex-col gap-3">
         <div className="flex w-full flex-col gap-0.5">

@@ -1,6 +1,13 @@
 import type { IconName } from "@/components/icon";
 
-export type NavItem = { href: string; label: string; icon: IconName; shortcut?: string };
+export type NavItem = { href: string; label: string; icon: IconName; shortcut?: string; requiresRole?: "manager" };
+
+export const TEAM_ITEM: NavItem = {
+  href: "/admin",
+  label: "Team approvals",
+  icon: "nav-personal",
+  requiresRole: "manager",
+};
 export type NavGroup = { label: string; items: NavItem[] };
 
 export const NAV_GROUPS: NavGroup[] = [
@@ -28,6 +35,10 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/withdrawal-methods", label: "Withdrawal methods", icon: "nav-withdrawal" },
     ],
   },
+  {
+    label: "Management",
+    items: [TEAM_ITEM],
+  },
 ];
 
 export const SETTINGS_ITEM: NavItem = { href: "/settings", label: "Settings", icon: "settings" };
@@ -35,6 +46,7 @@ export const SETTINGS_ITEM: NavItem = { href: "/settings", label: "Settings", ic
 export const ALL_PAGES: NavItem[] = [...NAV_GROUPS.flatMap((g) => g.items), SETTINGS_ITEM];
 
 export function pageTitle(pathname: string): string {
+  if (pathname === "/guide" || pathname.startsWith("/guide/")) return "User guide";
   const match = ALL_PAGES.find((p) => pathname === p.href || pathname.startsWith(p.href + "/"));
   return match?.label ?? "Time off";
 }

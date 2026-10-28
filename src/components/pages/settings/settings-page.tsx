@@ -12,6 +12,7 @@ import {
   PaletteIcon,
   PlusIcon,
   RotateCcwIcon,
+  ShieldCheckIcon,
   SlidersHorizontalIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ApiError, changePassword } from "@/lib/api";
 import { formatTime } from "@/lib/dates";
 import { computeLeaveStats, formatDays } from "@/lib/leave";
 import type { Settings } from "@/lib/types";
@@ -45,6 +47,7 @@ const TABS = [
   { value: "general", label: "General", icon: SlidersHorizontalIcon },
   { value: "time-off", label: "Time off", icon: CalendarDaysIcon },
   { value: "notifications", label: "Notifications", icon: BellIcon },
+  { value: "security", label: "Security", icon: ShieldCheckIcon },
   { value: "appearance", label: "Appearance", icon: PaletteIcon },
   { value: "data", label: "Data", icon: DatabaseIcon },
 ] as const;
@@ -106,6 +109,9 @@ export function SettingsPage() {
           </TabsContent>
           <TabsContent value="notifications">
             <NotificationsTab />
+          </TabsContent>
+          <TabsContent value="security">
+            <SecurityTab />
           </TabsContent>
           <TabsContent value="appearance">
             <AppearanceTab />
@@ -383,6 +389,83 @@ function NotificationsTab() {
       <Row title={t("Weekly digest")} description={t("A Monday summary of your week ahead and leave balance")} htmlFor="st-digest">
         <Switch id="st-digest" checked={settings.weeklyDigest} onCheckedChange={(v) => set("weeklyDigest", v)} />
       </Row>
+    </Panel>
+  );
+}
+
+
+/* ------------------------------------------------------------------ security */
+
+function SecurityTab() {
+  const t = useT();
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const tooShort = next.length > 0 && next.length < 8;
+  const mismatch = confirm.length > 0 && confirm !== next;
+  const canSubmit = current.length > 0 && next.length >= 8 && confirm === next && !busy;
+
+  const submit = async () => {
+    if (!canSubmit) return;
+    setBusy(true);
+    try {
+      await changePassword(current, next);
+      toast.success(t("Password updated"), { description: t("Other devices have been signed out.") });
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+    } catch (error) {
+      const code = error instanceof ApiError ? error.code : "";
+      toast.error(code === "wrong_password" ? t("Current password is incorrect") : t("Password must be at least 8 characters"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Panel title={t("Security")} description={t("Change the password you use to sign in.")}>
+      <Row title={t("Current password")} htmlFor="sec-current" stack>
+        <Input
+          id="sec-current"
+          type="password"
+          autoComplete="current-password"
+          className={cn("w-56", TOUCH_CONTROL)}
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+        />
+      </Row>
+      <Row title={t("New password")} description={t("At least 8 characters")} htmlFor="sec-new" stack>
+        <Input
+          id="sec-new"
+          type="password"
+          autoComplete="new-password"
+          className={cn("w-56", TOUCH_CONTROL)}
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          aria-invalid={tooShort || undefined}
+        />
+      </Row>
+      <Row title={t("Confirm new password")} htmlFor="sec-confirm" stack>
+        <Input
+          id="sec-confirm"
+          type="password"
+          autoComplete="new-password"
+          className={cn("w-56", TOUCH_CONTROL)}
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          aria-invalid={mismatch || undefined}
+        />
+      </Row>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <p className={cn("t-12", mismatch || tooShort ? "text-danger" : "text-fg-2")}>
+          {mismatch ? t("Passwords don’t match") : tooShort ? t("At least 8 characters") : t("Other devices will be signed out.")}
+        </p>
+        <Button type="button" disabled={!canSubmit} onClick={() => void submit()}>
+          {busy ? t("Please wait…") : t("Update password")}
+        </Button>
+      </div>
     </Panel>
   );
 }
