@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import { t } from "@/lib/i18n";
 import { useAppStore } from "@/stores/app-store";
 import { useCalendarStore } from "@/stores/calendar-store";
 import { openOverlay } from "@/stores/overlay-store";
@@ -15,9 +16,9 @@ export function deleteCalendarEvent(id: string) {
   useCalendarStore.getState().closePopover();
   if (event.requestId) {
     const requestId = event.requestId;
-    toast("This event belongs to a leave request", {
-      description: "Cancel or delete the request to remove it.",
-      action: { label: "View request", onClick: () => openOverlay({ kind: "request-details", requestId }) },
+    toast(t("This event belongs to a leave request"), {
+      description: t("Cancel or delete the request to remove it."),
+      action: { label: t("View request"), onClick: () => openOverlay({ kind: "request-details", requestId }) },
     });
     return;
   }

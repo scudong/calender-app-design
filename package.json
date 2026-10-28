@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "deploy": "next build && npx --yes wrangler@4.152.0 pages deploy out --project-name calender-app-zh --branch main --commit-dirty=true"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

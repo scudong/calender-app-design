@@ -1,5 +1,8 @@
+"use client";
+
 import { AlertCircleIcon, Clock3Icon, PencilLineIcon } from "lucide-react";
 import { Icon } from "@/components/icon";
+import { useT } from "@/hooks/use-i18n";
 import { cn } from "@/lib/utils";
 import type { InvoiceStatus } from "@/lib/types";
 
@@ -15,6 +18,7 @@ export const STATUS_LABELS = Object.fromEntries(
 ) as Record<InvoiceStatus, string>;
 
 export function InvoiceStatusBadge({ status, className }: { status: InvoiceStatus; className?: string }) {
+  const t = useT();
   const { label, tone } = STYLES[status];
   return (
     <span
@@ -29,7 +33,7 @@ export function InvoiceStatusBadge({ status, className }: { status: InvoiceStatu
       {status === "sent" && <Clock3Icon className="size-3.5" strokeWidth={2.25} />}
       {status === "overdue" && <AlertCircleIcon className="size-3.5" strokeWidth={2.25} />}
       {status === "draft" && <PencilLineIcon className="size-3.5" strokeWidth={2.25} />}
-      <span className="salt text-[12px] leading-none tracking-[-0.24px] whitespace-nowrap">{label}</span>
+      <span className="salt text-[12px] leading-none tracking-[-0.24px] whitespace-nowrap">{t(label)}</span>
     </span>
   );
 }

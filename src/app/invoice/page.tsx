@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { InvoiceDeepLink } from "@/components/pages/invoice/invoice-deep-link";
 import { InvoicePage } from "@/components/pages/invoice/invoice-page";
 
-export const metadata: Metadata = { title: "Invoice" };
+export const metadata: Metadata = { title: "发票" };
 
 export default function Page() {
   return (

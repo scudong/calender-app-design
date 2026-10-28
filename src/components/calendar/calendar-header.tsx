@@ -16,6 +16,7 @@ import {
   weekDays,
 } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { useCalendarStore, type CalendarView } from "@/stores/calendar-store";
@@ -28,12 +29,13 @@ const VIEWS: { id: CalendarView; label: string; left: number; width: number; key
 ];
 
 function useRangeLabel(visible: string[]) {
+  const t = useT();
   const view = useCalendarStore((s) => s.view);
   const date = useCalendarStore((s) => s.date);
   const compact = useCalendarStore((s) => s.compact);
   const weekStartsOn = useAppStore((s) => s.settings.weekStartsOn);
   const year = fromKey(date).getFullYear();
-  const title = `${monthName(date)}, ${year}`;
+  const title = t("{month}, {year}", { month: monthName(date), year });
 
   if (view === "month") {
     const first = startOfMonth(date);
@@ -42,13 +44,17 @@ function useRangeLabel(visible: string[]) {
   const days = weekDays(date, weekStartsOn);
   // ISO weeks start on Monday; for Sunday-first weeks use that Monday.
   const week = isoWeek(weekStartsOn === 0 ? days[1] : days[0]);
-  if (view === "day") return { title, subtitle: `Week ${isoWeek(date)} · ${formatWeekday(date)}, ${formatShort(date)}` };
+  if (view === "day")
+    return { title, subtitle: t("Week {week} · {date}", { week: isoWeek(date), date: formatWeekday(date) + ", " + formatShort(date) }) };
   if (compact) {
     const first = visible[0];
     const last = visible[visible.length - 1];
-    return { title: `${monthName(first)}, ${fromKey(first).getFullYear()}`, subtitle: `Week ${isoWeek(first)} · ${formatRange(first, last)}` };
+    return {
+      title: t("{month}, {year}", { month: monthName(first), year: fromKey(first).getFullYear() }),
+      subtitle: t("Week {week} · {date}", { week: isoWeek(first), date: formatRange(first, last) }),
+    };
   }
-  return { title, subtitle: `Week ${week} · ${formatRange(days[0], days[6])}` };
+  return { title, subtitle: t("Week {week} · {date}", { week, date: formatRange(days[0], days[6]) }) };
 }
 
 export function CalendarHeader({ days }: { days: string[] }) {
@@ -59,8 +65,12 @@ export function CalendarHeader({ days }: { days: string[] }) {
   const today = useToday();
   const compact = useCalendarStore((s) => s.compact);
   const { title, subtitle } = useRangeLabel(days);
+  const t = useT();
   const active = VIEWS.find((v) => v.id === view)!;
-  const unit = view === "day" ? "day" : view === "week" ? (compact ? "3 days" : "week") : "month";
+  const prevLabel =
+    view === "day" ? t("Previous day") : view === "week" ? (compact ? t("Previous 3 days") : t("Previous week")) : t("Previous month");
+  const nextLabel =
+    view === "day" ? t("Next day") : view === "week" ? (compact ? t("Next 3 days") : t("Next week")) : t("Next month");
 
   const activeIndex = VIEWS.indexOf(active);
 
@@ -75,7 +85,7 @@ export function CalendarHeader({ days }: { days: string[] }) {
         </div>
 
         <Button size="sm" className="shrink-0 max-md:h-8" onClick={() => setDate(today)} aria-keyshortcuts="T">
-          Today
+          {t("Today")}
         </Button>
 
         <div className="flex h-[30px] shrink-0 items-center overflow-hidden rounded-lg border border-control bg-surface max-md:h-8">
@@ -84,13 +94,13 @@ export function CalendarHeader({ days }: { days: string[] }) {
               <button
                 type="button"
                 onClick={() => step(-1)}
-                aria-label={`Previous ${unit}`}
+                aria-label={prevLabel}
                 className="press flex h-full w-[29px] items-center justify-center outline-none hover-fine:bg-hover focus-visible:bg-hover max-md:w-9"
               >
                 <Icon name="arrow-left" />
               </button>
             </TooltipTrigger>
-            <TooltipContent>Previous {unit}</TooltipContent>
+            <TooltipContent>{prevLabel}</TooltipContent>
           </Tooltip>
           <span className="h-full w-px bg-control" aria-hidden />
           <Tooltip>
@@ -98,20 +108,20 @@ export function CalendarHeader({ days }: { days: string[] }) {
               <button
                 type="button"
                 onClick={() => step(1)}
-                aria-label={`Next ${unit}`}
+                aria-label={nextLabel}
                 className="press flex h-full w-[29px] items-center justify-center outline-none hover-fine:bg-hover focus-visible:bg-hover max-md:w-9"
               >
                 <Icon name="arrow-right" className="-scale-x-100" />
               </button>
             </TooltipTrigger>
-            <TooltipContent>Next {unit}</TooltipContent>
+            <TooltipContent>{nextLabel}</TooltipContent>
           </Tooltip>
         </div>
       </div>
 
       <div
         role="tablist"
-        aria-label="Calendar view"
+        aria-label={t("Calendar view")}
         className="relative flex h-[34px] w-full items-center gap-0.5 overflow-hidden rounded-lg bg-app p-px md:h-[30px] md:w-[163px]"
         style={{ "--w": `${active.width}px`, "--x": `${active.left}px`, "--i": activeIndex } as React.CSSProperties}
       >
@@ -139,11 +149,11 @@ export function CalendarHeader({ days }: { days: string[] }) {
           >
             {v.id === "week" ? (
               <>
-                <span className="md:hidden">3 days</span>
-                <span className="max-md:hidden">{v.label}</span>
+                <span className="md:hidden">{t("3 days")}</span>
+                <span className="max-md:hidden">{t(v.label)}</span>
               </>
             ) : (
-              v.label
+              t(v.label)
             )}
           </button>
         ))}

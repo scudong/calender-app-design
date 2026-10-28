@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { formatLong, formatShort } from "@/lib/dates";
 import type { Benefit } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useAppStore } from "@/stores/app-store";
 import { ClaimDialog } from "./claim-dialog";
 import { CATEGORIES, CategoryTile, formatMoney, type BenefitCategory } from "./shared";
@@ -25,6 +26,7 @@ import { CATEGORIES, CategoryTile, formatMoney, type BenefitCategory } from "./s
 type Filter = "All" | BenefitCategory;
 
 export function BenefitsPage() {
+  const t = useT();
   const benefits = useAppStore((s) => s.benefits);
   const toggleBenefit = useAppStore((s) => s.toggleBenefit);
   const [filter, setFilter] = useState<Filter>("All");
@@ -54,44 +56,49 @@ export function BenefitsPage() {
 
   const enroll = (b: Benefit) => {
     toggleBenefit(b.id);
-    toast.success(`Enrolled in ${b.name}`, { description: `Active until ${formatLong(b.renewsOn)}` });
+    toast.success(t("Enrolled in {name}", { name: b.name }), {
+      description: t("Active until {date}", { date: formatLong(b.renewsOn) }),
+    });
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-thin bg-app">
       <header className="sticky top-0 z-10 flex min-h-[68px] shrink-0 items-center gap-3 border-b border-hairline bg-surface px-4 py-3 md:h-[68px] md:py-0">
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <h2 className="t-16 text-fg">Your benefits</h2>
+          <h2 className="t-16 text-fg">{t("Your benefits")}</h2>
           <p className="t-14 leading-[1.3] text-fg-2 md:truncate md:leading-none">
-            {summary.enrolled} of {benefits.length} enrolled · budgets reset on renewal
+            {t("{enrolled} of {total} enrolled · budgets reset on renewal", {
+              enrolled: summary.enrolled,
+              total: benefits.length,
+            })}
           </p>
         </div>
       </header>
 
       <div className="flex flex-col gap-4 p-4">
         <dl className="grid grid-cols-2 overflow-hidden rounded-xl border border-hairline bg-surface md:grid-cols-4">
-          <SummaryStat label="Total budget" value={formatMoney(summary.budget)} />
-          <SummaryStat label="Used" value={formatMoney(summary.used)} />
+          <SummaryStat label={t("Total budget")} value={formatMoney(summary.budget)} />
+          <SummaryStat label={t("Used")} value={formatMoney(summary.used)} />
           <SummaryStat
-            label="Remaining"
+            label={t("Remaining")}
             value={formatMoney(summary.remaining)}
             extra={
               summary.budget > 0 ? (
                 <Progress
                   value={(summary.used / summary.budget) * 100}
                   className="mt-1 h-1 bg-app"
-                  aria-label="Budget used"
+                  aria-label={t("Budget used")}
                 />
               ) : null
             }
           />
-          <SummaryStat label="Enrolled" value={`${summary.enrolled}`} suffix={`of ${benefits.length}`} />
+          <SummaryStat label={t("Enrolled")} value={`${summary.enrolled}`} suffix={t("of {n}", { n: benefits.length })} />
         </dl>
 
         {/* Phones: one horizontally scrolling chip row that bleeds to the screen edges */}
         <div
           role="toolbar"
-          aria-label="Filter by category"
+          aria-label={t("Filter by category")}
           className="-mx-4 flex items-center gap-1 overflow-x-auto px-4 py-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:p-0 [&::-webkit-scrollbar]:hidden"
         >
           {(["All", ...CATEGORIES] as Filter[]).map((c) => {
@@ -111,7 +118,7 @@ export function BenefitsPage() {
                 )}
               >
                 {c !== "All" && <CategoryTile category={c} size="sm" />}
-                {c}
+                {t(c)}
                 <span className="t-12 text-placeholder tabular-nums">{n}</span>
               </button>
             );
@@ -120,7 +127,7 @@ export function BenefitsPage() {
 
         {visible.length === 0 ? (
           <div className="rounded-xl border border-dashed border-hairline bg-surface px-4 py-14 text-center">
-            <p className="t-14 text-fg-2">No {filter.toLowerCase()} benefits yet.</p>
+            <p className="t-14 text-fg-2">{t("No {category} benefits yet.", { category: t(filter).toLowerCase() })}</p>
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(min(340px,100%),1fr))] gap-4">
@@ -147,26 +154,28 @@ export function BenefitsPage() {
       <AlertDialog open={!!unenrollBenefit} onOpenChange={(v) => !v && setUnenrollId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="t-16">Unenroll from {unenrollBenefit?.name}?</AlertDialogTitle>
+            <AlertDialogTitle className="t-16">{t("Unenroll from {name}?", { name: unenrollBenefit?.name ?? "" })}</AlertDialogTitle>
             <AlertDialogDescription className="t-14 leading-[1.4]">
               {unenrollBenefit && unenrollBenefit.budget - unenrollBenefit.used > 0
-                ? `Your remaining ${formatMoney(unenrollBenefit.budget - unenrollBenefit.used)} won't be available until you enroll again.`
-                : "You can enroll again at any time before the next renewal."}
+                ? t("Your remaining {value} won't be available until you enroll again.", {
+                    value: formatMoney(unenrollBenefit.budget - unenrollBenefit.used),
+                  })
+                : t("You can enroll again at any time before the next renewal.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Stay enrolled</AlertDialogCancel>
+            <AlertDialogCancel>{t("Stay enrolled")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
                 if (!unenrollBenefit) return;
                 toggleBenefit(unenrollBenefit.id);
-                toast(`Unenrolled from ${unenrollBenefit.name}`, {
-                  action: { label: "Undo", onClick: () => useAppStore.getState().toggleBenefit(unenrollBenefit.id) },
+                toast(t("Unenrolled from {name}", { name: unenrollBenefit.name }), {
+                  action: { label: t("Undo"), onClick: () => useAppStore.getState().toggleBenefit(unenrollBenefit.id) },
                 });
               }}
             >
-              Unenroll
+              {t("Unenroll")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -209,6 +218,7 @@ function BenefitCard({
   onUnenroll: () => void;
   onClaim: () => void;
 }) {
+  const t = useT();
   const remaining = Math.max(0, b.budget - b.used);
   const pct = b.budget > 0 ? Math.min(100, (b.used / b.budget) * 100) : 0;
   const nearlyUsed = pct >= 90;
@@ -221,7 +231,7 @@ function BenefitCard({
           <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-0.5">
             <h3 className="t-14 truncate text-fg">{b.name}</h3>
             <p className="t-12 text-fg-2">
-              {b.provider} · {b.category}
+              {b.provider} · {t(b.category)}
             </p>
           </div>
           {b.enrolled && (
@@ -233,7 +243,7 @@ function BenefitCard({
                 color: "var(--status-success)",
               }}
             >
-              <CheckIcon className="size-3.5" strokeWidth={2.25} /> Enrolled
+              <CheckIcon className="size-3.5" strokeWidth={2.25} /> {t("Enrolled")}
             </span>
           )}
         </div>
@@ -244,15 +254,15 @@ function BenefitCard({
             <>
               <div className="flex items-baseline justify-between gap-3">
                 <span className="t-14 text-table tabular-nums">
-                  {formatMoney(b.used, true)} <span className="text-fg-2">of {formatMoney(b.budget)} used</span>
+                  {formatMoney(b.used, true)} <span className="text-fg-2">{t("of {value} used", { value: formatMoney(b.budget) })}</span>
                 </span>
                 <span className={cn("t-12 tabular-nums", nearlyUsed ? "text-warning" : "text-fg-2")}>
-                  {formatMoney(remaining)} left
+                  {t("{value} left", { value: formatMoney(remaining) })}
                 </span>
               </div>
               <Progress
                 value={pct}
-                aria-label={`${b.name} budget used`}
+                aria-label={t("{name} budget used", { name: b.name })}
                 className={cn(
                   "h-1.5 bg-app",
                   !b.enrolled && "opacity-50",
@@ -261,7 +271,7 @@ function BenefitCard({
               />
             </>
           ) : (
-            <p className="t-14 leading-[1.3] text-fg-2">No spending budget — covered in full by the company.</p>
+            <p className="t-14 leading-[1.3] text-fg-2">{t("No spending budget — covered in full by the company.")}</p>
           )}
         </div>
       </div>
@@ -270,7 +280,7 @@ function BenefitCard({
       <div className="flex flex-wrap items-center gap-2 border-t border-hairline px-4 py-3 max-sm:gap-y-3">
         <span className="t-12 flex min-w-0 flex-1 items-center gap-1.5 text-fg-2 max-sm:basis-full">
           <CalendarSyncIcon className="size-3.5 shrink-0 text-icon" />
-          <span className="truncate">Renews {formatShort(b.renewsOn)}, {b.renewsOn.slice(0, 4)}</span>
+          <span className="truncate">{t("Renews {date}, {year}", { date: formatShort(b.renewsOn), year: b.renewsOn.slice(0, 4) })}</span>
         </span>
         {b.enrolled ? (
           <>
@@ -280,18 +290,18 @@ function BenefitCard({
                 className="px-2 max-sm:h-10 max-sm:flex-1"
                 disabled={remaining <= 0}
                 onClick={onClaim}
-                aria-label={`Submit a claim for ${b.name}`}
+                aria-label={t("Submit a claim for {name}", { name: b.name })}
               >
-                <ReceiptIcon className="text-icon" /> Claim
+                <ReceiptIcon className="text-icon" /> {t("Claim")}
               </Button>
             )}
             <Button size="sm" variant="ghost" className="px-2 max-sm:h-10 max-sm:flex-1" onClick={onUnenroll}>
-              Unenroll
+              {t("Unenroll")}
             </Button>
           </>
         ) : (
           <Button size="sm" variant="brand" className="px-2 max-sm:h-10 max-sm:flex-1" onClick={onEnroll}>
-            <PlusIcon /> Enroll
+            <PlusIcon /> {t("Enroll")}
           </Button>
         )}
       </div>

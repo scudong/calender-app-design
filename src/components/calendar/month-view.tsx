@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { WEEKDAYS_SHORT, dayOfWeek, formatTime, fromKey, isWeekend, monthGrid } from "@/lib/dates";
+import { formatLong, formatTime, fromKey, isWeekend, monthGrid, weekdayShort } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useIsMobile } from "@/hooks/use-media-query";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
@@ -22,6 +23,7 @@ export function MonthView() {
   const { weekStartsOn, showWeekends, timeFormat } = useAppStore((s) => s.settings);
   const today = useToday();
   const isMobile = useIsMobile();
+  const t = useT();
   // On phones a tap on a day opens it (cells are too small to act on chips).
   const openDay = (d: string) => {
     setDate(d);
@@ -38,17 +40,18 @@ export function MonthView() {
   const byDay = useMemo(() => {
     const map = new Map<string, { kind: "event" | "holiday"; id: string; label: string; color: Parameters<typeof eventStyle>[0]; sort: number }[]>();
     for (const h of holidays) {
-      map.set(h.date, [...(map.get(h.date) ?? []), { kind: "holiday", id: h.id, label: "National holiday", color: "purple", sort: -2 }]);
+      map.set(h.date, [...(map.get(h.date) ?? []), { kind: "holiday", id: h.id, label: t("National holiday"), color: "purple", sort: -2 }]);
     }
     for (const e of events) {
-      const label = e.allDay ? e.title : `${formatTime(e.start, timeFormat)} ${e.title}`;
+      const title = t(e.title);
+      const label = e.allDay ? title : `${formatTime(e.start, timeFormat)} ${title}`;
       map.set(e.date, [...(map.get(e.date) ?? []), { kind: "event", id: e.id, label, color: e.color, sort: e.allDay ? -1 : e.start }]);
     }
     for (const list of map.values()) list.sort((a, b) => a.sort - b.sort);
     return map;
-  }, [events, holidays, timeFormat]);
+  }, [events, holidays, timeFormat, t]);
 
-  const headers = grid.slice(0, cols).map((d) => WEEKDAYS_SHORT[dayOfWeek(d)]);
+  const headers = grid.slice(0, cols).map((d) => weekdayShort(d));
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -105,13 +108,13 @@ export function MonthView() {
                         ? "text-fg hover-fine:bg-hover"
                         : "text-placeholder hover-fine:bg-hover",
                 )}
-                aria-label={fromKey(d).toDateString()}
+                aria-label={formatLong(d)}
               >
                 {fromKey(d).getDate()}
               </button>
               {/* Phones: up to three colour dots per day */}
               {items.length > 0 && (
-                <span className="flex gap-0.5 md:hidden" aria-label={`${items.length} ${items.length === 1 ? "item" : "items"}`}>
+                <span className="flex gap-0.5 md:hidden" aria-label={t(items.length === 1 ? "{n} item" : "{n} items", { n: items.length })}>
                   {items.slice(0, 3).map((it) => (
                     <span key={it.id} className="size-1.5 rounded-full" style={{ background: `var(--event-${it.color}-fg)` }} />
                   ))}
@@ -141,7 +144,7 @@ export function MonthView() {
                   }}
                   className="t-12 self-start rounded-md px-1.5 py-1 text-fg-2 hover-fine:bg-hover hover-fine:text-fg max-md:hidden"
                 >
-                  +{hidden} more
+                  {t("+{n} more", { n: hidden })}
                 </button>
               )}
             </div>

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/command";
 import { formatLong, formatShort, formatTimeRange } from "@/lib/dates";
 import { ALL_PAGES } from "@/lib/nav";
+import { useT } from "@/hooks/use-i18n";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { useCalendarStore } from "@/stores/calendar-store";
@@ -25,16 +26,17 @@ import { openOverlay, useOverlayStore } from "@/stores/overlay-store";
 
 /** The title-bar search field. Opens a command palette (⌘K / "/"). */
 export function GlobalSearchTrigger() {
+  const t = useT();
   return (
     <button
       type="button"
       onClick={() => openOverlay({ kind: "search" })}
       className="press flex h-[30px] w-[30px] items-center justify-center gap-2 rounded-lg border border-control bg-surface text-left outline-none transition-[border-color,box-shadow] duration-150 hover-fine:border-segment focus-visible:ring-3 focus-visible:ring-brand/15 md:w-48 md:justify-start md:px-2.5 xl:w-60"
-      aria-label="Search"
+      aria-label={t("Search")}
       aria-keyshortcuts="Meta+K"
     >
       <Icon name="search" />
-      <span className="t-14 hidden min-w-0 flex-1 text-placeholder md:block">Search...</span>
+      <span className="t-14 hidden min-w-0 flex-1 text-placeholder md:block">{t("Search...")}</span>
     </button>
   );
 }
@@ -57,6 +59,7 @@ export function GlobalSearch() {
   const timeFormat = useAppStore((s) => s.settings.timeFormat);
   const { resolvedTheme, setTheme } = useTheme();
   const today = useToday();
+  const t = useT();
 
   // ⌘K / Ctrl+K toggles the palette instantly — no animation for keyboard actions.
   useEffect(() => {
@@ -90,41 +93,41 @@ export function GlobalSearch() {
     <CommandDialog
       open={open}
       onOpenChange={(v) => !v && close()}
-      title="Search"
-      description="Search pages, events, requests and documents"
+      title={t("Search")}
+      description={t("Search pages, events, requests and documents")}
       className="data-open:animate-none data-closed:animate-none sm:max-w-[560px] max-sm:top-2 max-sm:bottom-auto max-sm:left-2 max-sm:w-[calc(100%-1rem)] max-sm:max-h-[70dvh] max-sm:rounded-2xl max-sm:pb-0"
     >
       {/* cmdk needs a <Command> root around its input and list. */}
       <Command>
-        <CommandInput value={query} onValueChange={setQuery} placeholder="Search events, requests, documents…" />
+        <CommandInput value={query} onValueChange={setQuery} placeholder={t("Search events, requests, documents…")} />
         <CommandList className="max-h-[380px]">
-          <CommandEmpty className="t-14 text-fg-2">No results found.</CommandEmpty>
-          <CommandGroup heading="Actions">
+          <CommandEmpty className="t-14 text-fg-2">{t("No results found.")}</CommandEmpty>
+          <CommandGroup heading={t("Actions")}>
             <CommandItem onSelect={() => run(() => openOverlay({ kind: "request" }))}>
-              <PlaneIcon /> Request time-off
+              <PlaneIcon /> {t("Request time-off")}
             </CommandItem>
             <CommandItem onSelect={() => run(() => openOverlay({ kind: "event", date: today }))}>
-              <CalendarPlusIcon /> New event
+              <CalendarPlusIcon /> {t("New event")}
               <CommandShortcut>N</CommandShortcut>
             </CommandItem>
             <CommandItem onSelect={() => run(() => showInCalendar(today))}>
-              <CalendarDaysIcon /> Go to today
+              <CalendarDaysIcon /> {t("Go to today")}
               <CommandShortcut>T</CommandShortcut>
             </CommandItem>
             <CommandItem onSelect={() => run(() => setTheme(resolvedTheme === "dark" ? "light" : "dark"))}>
-              {resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />} Toggle dark mode
+              {resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />} {t("Toggle dark mode")}
             </CommandItem>
           </CommandGroup>
           <CommandSeparator />
-          <CommandGroup heading="Pages">
+          <CommandGroup heading={t("Pages")}>
             {ALL_PAGES.map((p) => (
               <CommandItem key={p.href} value={`page ${p.label}`} onSelect={() => run(() => router.push(p.href))}>
-                <Icon name={p.icon} /> {p.label}
+                <Icon name={p.icon} /> {t(p.label)}
               </CommandItem>
             ))}
           </CommandGroup>
           <CommandSeparator />
-          <CommandGroup heading="Events">
+          <CommandGroup heading={t("Events")}>
             {sortedEvents.map((e) => (
               <CommandItem
                 key={e.id}
@@ -141,7 +144,7 @@ export function GlobalSearch() {
             ))}
           </CommandGroup>
           <CommandSeparator />
-          <CommandGroup heading="Leave requests">
+          <CommandGroup heading={t("Leave requests")}>
             {requests.map((r) => (
               <CommandItem
                 key={r.id}
@@ -150,30 +153,30 @@ export function GlobalSearch() {
               >
                 <PlaneIcon />
                 <span className="min-w-0 flex-1 truncate">
-                  {r.type} · {r.notes}
+                  {t(r.type)} · {r.notes}
                 </span>
-                <CommandShortcut className="tracking-normal capitalize">{r.status}</CommandShortcut>
+                <CommandShortcut className="tracking-normal capitalize">{t(r.status)}</CommandShortcut>
               </CommandItem>
             ))}
           </CommandGroup>
           <CommandSeparator />
-          <CommandGroup heading="Documents">
+          <CommandGroup heading={t("Documents")}>
             {documents.map((d) => (
               <CommandItem key={d.id} value={`document ${d.name} ${d.category} ${d.id}`} onSelect={() => run(() => router.push("/documents"))}>
                 <FileTextIcon />
                 <span className="min-w-0 flex-1 truncate">{d.name}</span>
-                <CommandShortcut className="tracking-normal">{d.category}</CommandShortcut>
+                <CommandShortcut className="tracking-normal">{t(d.category)}</CommandShortcut>
               </CommandItem>
             ))}
           </CommandGroup>
-          <CommandGroup heading="Invoices">
+          <CommandGroup heading={t("Invoices")}>
             {invoices.map((i) => (
               <CommandItem key={i.id} value={`invoice ${i.number} ${i.client} ${i.id}`} onSelect={() => run(() => router.push(`/invoice?open=${i.id}`))}>
                 <ReceiptIcon />
                 <span className="min-w-0 flex-1 truncate">
                   {i.number} · {i.client}
                 </span>
-                <CommandShortcut className="tracking-normal capitalize">{i.status}</CommandShortcut>
+                <CommandShortcut className="tracking-normal capitalize">{t(i.status)}</CommandShortcut>
               </CommandItem>
             ))}
           </CommandGroup>

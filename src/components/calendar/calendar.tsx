@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { addDays, isWeekend, weekDays } from "@/lib/dates";
+import { useT } from "@/hooks/use-i18n";
 import { useIsMobile } from "@/hooks/use-media-query";
 import { useAppStore } from "@/stores/app-store";
 import { COMPACT_WEEK_DAYS, useCalendarStore } from "@/stores/calendar-store";
@@ -26,6 +27,7 @@ export function Calendar() {
   const weekStartsOn = useAppStore((s) => s.settings.weekStartsOn);
   const showWeekends = useAppStore((s) => s.settings.showWeekends);
   const isMobile = useIsMobile();
+  const t = useT();
 
   // Phones: "Week" is a 3-day window and the arrows step 3 days at a time.
   useEffect(() => {
@@ -44,7 +46,7 @@ export function Calendar() {
 
   return (
     <section
-      aria-label="Calendar"
+      aria-label={t("Calendar")}
       className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-surface [--axis:44px] md:[--axis:70px]"
     >
       <CalendarHeader days={days} />

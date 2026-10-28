@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { addDays, formatRange, formatShort, formatWeekday, isoWeek, startOfWeek } from "@/lib/dates";
 import type { TimeEntry } from "@/lib/types";
+import { useT } from "@/hooks/use-i18n";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { EntryDialog } from "./entry-dialog";
@@ -26,6 +27,7 @@ import { ChartLegend, WeekChart, type DayTotal } from "./week-chart";
 type DialogState = { open: boolean; session: number; entry?: TimeEntry };
 
 export function TimeTrackingPage() {
+  const t = useT();
   const today = useToday();
   const weekStartsOn = useAppStore((s) => s.settings.weekStartsOn);
   const entries = useAppStore((s) => s.timeEntries);
@@ -85,9 +87,9 @@ export function TimeTrackingPage() {
       {/* Phones: title above the week switcher; the header scrolls away to give the list room */}
       <header className="z-10 flex shrink-0 flex-col gap-3 border-b border-hairline bg-surface px-4 py-3 md:sticky md:top-0 md:h-[68px] md:flex-row md:items-center md:py-0">
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <h2 className="t-16 text-fg">{isCurrentWeek ? "This week" : `Week ${isoWeek(weekStart)}`}</h2>
+          <h2 className="t-16 text-fg">{isCurrentWeek ? t("This week") : t("Week {n}", { n: isoWeek(weekStart) })}</h2>
           <p className="t-14 truncate text-fg-2">
-            {formatRange(weekStart, weekEnd)} · {formatHours(totals.total)} logged
+            {t("{range} · {hours} logged", { range: formatRange(weekStart, weekEnd), hours: formatHours(totals.total) })}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -95,18 +97,18 @@ export function TimeTrackingPage() {
             <Button
               size="icon"
               className="max-md:size-10"
-              aria-label="Previous week"
+              aria-label={t("Previous week")}
               onClick={() => setOffset((o) => o - 1)}
             >
               <Icon name="arrow-left" />
             </Button>
             <Button className="max-md:h-10" disabled={isCurrentWeek} onClick={() => setOffset(0)}>
-              This week
+              {t("This week")}
             </Button>
             <Button
               size="icon"
               className="max-md:size-10"
-              aria-label="Next week"
+              aria-label={t("Next week")}
               onClick={() => setOffset((o) => o + 1)}
             >
               <Icon name="arrow-left" className="rotate-180" />
@@ -114,7 +116,7 @@ export function TimeTrackingPage() {
           </div>
           <div className="h-4 w-px bg-hairline max-md:hidden" aria-hidden />
           <Button variant="brand" className="max-md:ml-auto max-md:h-10" onClick={() => openDialog()}>
-            <PlusIcon /> Add entry
+            <PlusIcon /> {t("Add entry")}
           </Button>
         </div>
       </header>
@@ -125,19 +127,19 @@ export function TimeTrackingPage() {
         <section className="grid grid-cols-1 overflow-hidden rounded-xl border border-hairline bg-surface md:grid-cols-[1fr_260px]">
           <div className="flex min-w-0 flex-col gap-5 p-4">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-              <h3 className="t-14 text-fg">Hours per day</h3>
+              <h3 className="t-14 text-fg">{t("Hours per day")}</h3>
               <ChartLegend />
             </div>
             <WeekChart days={days} today={today} onSelectDay={scrollToDay} />
           </div>
           {/* Phones: the three totals sit in a row under the chart */}
           <dl className="grid grid-cols-3 border-t border-hairline md:flex md:flex-col md:border-t-0 md:border-l">
-            <Stat label="Total" value={formatHours(totals.total)} />
-            <Stat label="Billable" value={formatHours(totals.billable)} color={BILLABLE_COLOR} />
-            <Stat label="Non-billable" value={formatHours(totals.nonBillable)} color={NON_BILLABLE_COLOR} />
+            <Stat label={t("Total")} value={formatHours(totals.total)} />
+            <Stat label={t("Billable")} value={formatHours(totals.billable)} color={BILLABLE_COLOR} />
+            <Stat label={t("Non-billable")} value={formatHours(totals.nonBillable)} color={NON_BILLABLE_COLOR} />
             <div className="col-span-3 mt-auto flex flex-col gap-2 border-t border-hairline p-4">
               <div className="flex items-center justify-between">
-                <span className="t-12 text-fg-2">Billable ratio</span>
+                <span className="t-12 text-fg-2">{t("Billable ratio")}</span>
                 <span className="t-12 text-fg tabular-nums">{billablePct}%</span>
               </div>
               <div className="flex h-1.5 gap-[2px] overflow-hidden rounded-full bg-app">
@@ -154,9 +156,9 @@ export function TimeTrackingPage() {
 
         <section className="overflow-hidden rounded-xl border border-hairline bg-surface">
           <div className="flex h-12 items-center justify-between border-b border-hairline px-4">
-            <h3 className="t-14 text-fg">Entries</h3>
+            <h3 className="t-14 text-fg">{t("Entries")}</h3>
             <span className="t-12 text-fg-2">
-              {weekEntries.length} {weekEntries.length === 1 ? "entry" : "entries"}
+              {t(weekEntries.length === 1 ? "{n} entry" : "{n} entries", { n: weekEntries.length })}
             </span>
           </div>
           {groups.length === 0 ? (
@@ -165,11 +167,11 @@ export function TimeTrackingPage() {
                 <ClockIcon className="size-4 text-icon" />
               </span>
               <div className="flex flex-col gap-1.5">
-                <p className="t-14 text-fg">No time logged this week</p>
-                <p className="t-14 text-fg-2">Start the timer or add an entry manually.</p>
+                <p className="t-14 text-fg">{t("No time logged this week")}</p>
+                <p className="t-14 text-fg-2">{t("Start the timer or add an entry manually.")}</p>
               </div>
               <Button onClick={() => openDialog()}>
-                <PlusIcon /> Add entry
+                <PlusIcon /> {t("Add entry")}
               </Button>
             </div>
           ) : (
@@ -185,7 +187,7 @@ export function TimeTrackingPage() {
                         <span className="text-fg">{formatWeekday(date)}</span>
                         <span className="ml-1.5 text-fg-2">
                           {formatShort(date)}
-                          {date === today && " · Today"}
+                          {date === today && t(" · Today")}
                         </span>
                       </span>
                       <span className="t-12 text-fg-2 tabular-nums">
@@ -197,7 +199,7 @@ export function TimeTrackingPage() {
                         <li key={e.id} className="flex items-center border-b border-subtle">
                           <button
                             type="button"
-                            aria-label={`Edit ${e.task}`}
+                            aria-label={t("Edit {task}", { task: e.task })}
                             className="flex min-h-14 min-w-0 flex-1 items-center gap-3 py-2.5 pl-4 text-left outline-none focus-visible:bg-hover"
                             onClick={() => openDialog(e)}
                           >
@@ -209,7 +211,7 @@ export function TimeTrackingPage() {
                                   style={{ background: `var(--event-${projectColor(e.project)}-fg)` }}
                                 />
                                 <span className="truncate">{e.project}</span>
-                                <span className="shrink-0">· {e.billable ? "Billable" : "Non-billable"}</span>
+                                <span className="shrink-0">· {e.billable ? t("Billable") : t("Non-billable")}</span>
                               </span>
                             </span>
                             <span className="t-14 shrink-0 text-table tabular-nums">{formatHours(e.minutes)}</span>
@@ -238,12 +240,12 @@ export function TimeTrackingPage() {
                 </colgroup>
                 <thead>
                   <tr className="h-10 bg-app text-left">
-                    <th className="t-14 px-4 font-medium text-fg-2">Task</th>
-                    <th className="t-14 px-2 font-medium text-fg-2">Project</th>
-                    <th className="t-14 px-2 font-medium text-fg-2">Billable</th>
-                    <th className="t-14 px-2 text-right font-medium text-fg-2">Duration</th>
+                    <th className="t-14 px-4 font-medium text-fg-2">{t("Task")}</th>
+                    <th className="t-14 px-2 font-medium text-fg-2">{t("Project")}</th>
+                    <th className="t-14 px-2 font-medium text-fg-2">{t("Billable")}</th>
+                    <th className="t-14 px-2 text-right font-medium text-fg-2">{t("Duration")}</th>
                     <th className="px-4">
-                      <span className="sr-only">Actions</span>
+                      <span className="sr-only">{t("Actions")}</span>
                     </th>
                   </tr>
                 </thead>
@@ -254,7 +256,7 @@ export function TimeTrackingPage() {
                         <span className="t-12 text-fg">{formatWeekday(date)}</span>
                         <span className="t-12 ml-1.5 text-fg-2">
                           {formatShort(date)}
-                          {date === today && " · Today"}
+                          {date === today && t(" · Today")}
                         </span>
                       </th>
                       <td className="t-12 px-2 text-right text-fg-2 tabular-nums">
@@ -278,7 +280,7 @@ export function TimeTrackingPage() {
                           <Switch
                             size="sm"
                             checked={e.billable}
-                            aria-label={`Billable: ${e.task}`}
+                            aria-label={t("Billable: {task}", { task: e.task })}
                             onCheckedChange={(v) => saveTimeEntry({ ...e, billable: v })}
                           />
                         </td>
@@ -286,16 +288,16 @@ export function TimeTrackingPage() {
                         <td className="px-4">
                           <div className="flex items-center justify-end gap-0.5">
                             <RowAction
-                              label="Resume timer"
+                              label={t("Resume timer")}
                               disabled={timerRunning}
                               onClick={() => startTimer(e.project, e.task)}
                             >
                               <PlayIcon />
                             </RowAction>
-                            <RowAction label="Edit entry" onClick={() => openDialog(e)}>
+                            <RowAction label={t("Edit entry")} onClick={() => openDialog(e)}>
                               <PencilIcon />
                             </RowAction>
-                            <RowAction label="Delete entry" onClick={() => deleteTimeEntry(e.id)}>
+                            <RowAction label={t("Delete entry")} onClick={() => deleteTimeEntry(e.id)}>
                               <Trash2Icon />
                             </RowAction>
                           </div>
@@ -376,26 +378,27 @@ function EntryMenu({
   onToggleBillable: (billable: boolean) => void;
   onDelete: () => void;
 }) {
+  const t = useT();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="mx-1.5 size-10 shrink-0" aria-label={`Actions for ${entry.task}`}>
+        <Button variant="ghost" size="icon" className="mx-1.5 size-10 shrink-0" aria-label={t("Actions for {task}", { task: entry.task })}>
           <Icon name="more" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52 [&_[role^=menuitem]]:min-h-10">
         <DropdownMenuItem disabled={timerRunning} onSelect={onResume}>
-          <PlayIcon /> Resume timer
+          <PlayIcon /> {t("Resume timer")}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={onEdit}>
-          <PencilIcon /> Edit
+          <PencilIcon /> {t("Edit")}
         </DropdownMenuItem>
         <DropdownMenuCheckboxItem checked={entry.billable} onCheckedChange={onToggleBillable}>
-          Billable
+          {t("Billable")}
         </DropdownMenuCheckboxItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onSelect={onDelete}>
-          <Trash2Icon /> Delete
+          <Trash2Icon /> {t("Delete")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

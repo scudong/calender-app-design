@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { addDays } from "@/lib/dates";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
+import { useT } from "@/hooks/use-i18n";
 import { useToday } from "@/hooks/use-today";
 import { uid, useAppStore } from "@/stores/app-store";
 import { useInvoiceUi } from "./invoice-ui-store";
@@ -41,6 +42,7 @@ export function InvoiceEditor() {
 const blankLine = (): Line => ({ id: uid("it"), description: "", quantity: "1", rate: "" });
 
 function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => void }) {
+  const t = useT();
   const today = useToday();
   const invoices = useAppStore((s) => s.invoices);
   const saveInvoice = useAppStore((s) => s.saveInvoice);
@@ -84,15 +86,15 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
   const duplicateNumber = invoices.some((i) => i.number === draft.number.trim() && i.id !== invoiceId);
 
   const error = !draft.client.trim()
-    ? "Add a client."
+    ? t("Add a client.")
     : !draft.number.trim()
-      ? "Add an invoice number."
+      ? t("Add an invoice number.")
       : duplicateNumber
-        ? "Another invoice already uses this number."
+        ? t("Another invoice already uses this number.")
         : draft.dueDate < draft.issueDate
-          ? "The due date can't be before the issue date."
+          ? t("The due date can't be before the issue date.")
           : filled.length === 0
-            ? "Add at least one line item with a description and quantity."
+            ? t("Add at least one line item with a description and quantity.")
             : null;
 
   const save = (status: InvoiceStatus) => {
@@ -114,9 +116,9 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
         rate: Number(l.rate) || 0,
       })),
     });
-    toast.success(existing ? "Invoice updated" : status === "sent" ? "Invoice created and sent" : "Draft saved", {
+    toast.success(existing ? t("Invoice updated") : status === "sent" ? t("Invoice created and sent") : t("Draft saved"), {
       description: `${saved.number} · ${saved.client}`,
-      action: { label: "View", onClick: () => useInvoiceUi.getState().view(saved.id) },
+      action: { label: t("View"), onClick: () => useInvoiceUi.getState().view(saved.id) },
     });
     onDone();
   };
@@ -130,21 +132,21 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
       }}
     >
       <DialogHeader className="gap-1.5 border-b border-hairline px-5 pt-5 pb-4 max-sm:px-4 max-sm:pr-12 max-sm:text-left">
-        <DialogTitle className="t-16">{existing ? `Edit ${existing.number}` : "New invoice"}</DialogTitle>
+        <DialogTitle className="t-16">{existing ? t("Edit {number}", { number: existing.number }) : t("New invoice")}</DialogTitle>
         <DialogDescription className="t-14">
-          {existing ? "Changes apply immediately to the invoice." : "Drafts stay private until you send them."}
+          {existing ? t("Changes apply immediately to the invoice.") : t("Drafts stay private until you send them.")}
         </DialogDescription>
       </DialogHeader>
 
       <div className="grid content-start gap-5 overflow-y-auto scroll-thin px-5 py-5 max-sm:px-4 max-sm:py-4">
         {/* Phones: client on its own row, number + currency share the next */}
         <div className="grid grid-cols-[minmax(0,1fr)_104px] gap-3 max-sm:gap-y-4 sm:grid-cols-[1.4fr_1fr_120px]">
-          <Field label="Client" htmlFor="inv-client" className="max-sm:col-span-2">
+          <Field label={t("Client")} htmlFor="inv-client" className="max-sm:col-span-2">
             <Input
               id="inv-client"
               list="inv-clients"
               autoFocus={!existing}
-              placeholder="Company name"
+              placeholder={t("Company name")}
               value={draft.client}
               aria-invalid={touched && !draft.client.trim()}
               onChange={(e) => set("client", e.target.value)}
@@ -155,7 +157,7 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
               ))}
             </datalist>
           </Field>
-          <Field label="Invoice number" htmlFor="inv-number">
+          <Field label={t("Invoice number")} htmlFor="inv-number">
             <Input
               id="inv-number"
               value={draft.number}
@@ -163,7 +165,7 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
               onChange={(e) => set("number", e.target.value)}
             />
           </Field>
-          <Field label="Currency" htmlFor="inv-currency">
+          <Field label={t("Currency")} htmlFor="inv-currency">
             <Select value={draft.currency} onValueChange={(v) => set("currency", v)}>
               <SelectTrigger id="inv-currency" className="w-full">
                 <SelectValue />
@@ -179,7 +181,7 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 sm:gap-3">
-          <Field label="Issue date" htmlFor="inv-issue">
+          <Field label={t("Issue date")} htmlFor="inv-issue">
             <Input
               id="inv-issue"
               type="date"
@@ -188,7 +190,7 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
               onChange={(e) => set("issueDate", e.target.value)}
             />
           </Field>
-          <Field label="Due date" htmlFor="inv-due">
+          <Field label={t("Due date")} htmlFor="inv-due">
             <div className="flex gap-1.5">
               <Input
                 id="inv-due"
@@ -206,7 +208,7 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
                   className="h-8 shrink-0 px-2"
                   onClick={() => set("dueDate", addDays(draft.issueDate, n))}
                 >
-                  Net {n}
+                  {t("Net {n}", { n })}
                 </Button>
               ))}
             </div>
@@ -214,14 +216,14 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
         </div>
 
         <div className="grid gap-2">
-          <span className="t-12 text-fg-2">Line items</span>
+          <span className="t-12 text-fg-2">{t("Line items")}</span>
           {/* Phones: each line item is its own small card (description, then qty / rate / amount) */}
           <div className="grid gap-2 sm:gap-0 sm:overflow-hidden sm:rounded-lg sm:border sm:border-hairline">
             <div className="grid h-8 grid-cols-[1fr_72px_104px_104px_36px] items-center gap-2 bg-app px-2 max-sm:hidden">
-              <span className="t-12 pl-0.5 text-fg-2">Description</span>
-              <span className="t-12 text-right text-fg-2">Qty</span>
-              <span className="t-12 text-right text-fg-2">Rate</span>
-              <span className="t-12 text-right text-fg-2">Amount</span>
+              <span className="t-12 pl-0.5 text-fg-2">{t("Description")}</span>
+              <span className="t-12 text-right text-fg-2">{t("Qty")}</span>
+              <span className="t-12 text-right text-fg-2">{t("Rate")}</span>
+              <span className="t-12 text-right text-fg-2">{t("Amount")}</span>
               <span />
             </div>
             {draft.items.map((l, idx) => (
@@ -230,16 +232,16 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
                 className="grid grid-cols-[72px_minmax(0,1fr)_auto] items-end gap-2 rounded-lg border border-hairline p-3 sm:grid-cols-[1fr_72px_104px_104px_36px] sm:items-center sm:rounded-none sm:border-0 sm:border-t sm:border-subtle sm:px-2 sm:py-1.5"
               >
                 <Input
-                  aria-label={`Line ${idx + 1} description`}
-                  placeholder="Service or product"
+                  aria-label={t("Line {n} description", { n: idx + 1 })}
+                  placeholder={t("Service or product")}
                   className="max-sm:col-span-2 max-sm:row-start-1"
                   value={l.description}
                   onChange={(e) => setLine(l.id, { description: e.target.value })}
                 />
                 <label className="grid gap-1.5">
-                  <span className="t-12 text-fg-2 sm:hidden">Qty</span>
+                  <span className="t-12 text-fg-2 sm:hidden">{t("Qty")}</span>
                   <Input
-                    aria-label={`Line ${idx + 1} quantity`}
+                    aria-label={t("Line {n} quantity", { n: idx + 1 })}
                     type="number"
                     inputMode="decimal"
                     min={0}
@@ -250,9 +252,9 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
                   />
                 </label>
                 <label className="grid gap-1.5">
-                  <span className="t-12 text-fg-2 sm:hidden">Rate</span>
+                  <span className="t-12 text-fg-2 sm:hidden">{t("Rate")}</span>
                   <Input
-                    aria-label={`Line ${idx + 1} rate`}
+                    aria-label={t("Line {n} rate", { n: idx + 1 })}
                     type="number"
                     inputMode="decimal"
                     min={0}
@@ -264,7 +266,7 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
                   />
                 </label>
                 <span className="grid min-w-0 gap-1.5 text-right max-sm:min-w-[88px]">
-                  <span className="t-12 text-fg-2 sm:hidden">Amount</span>
+                  <span className="t-12 text-fg-2 sm:hidden">{t("Amount")}</span>
                   <span className="t-14 truncate text-table tabular-nums max-sm:flex max-sm:h-8 max-sm:items-center max-sm:justify-end">
                     {formatMoney(lineTotal({ quantity: Number(l.quantity), rate: Number(l.rate) }), draft.currency)}
                   </span>
@@ -274,7 +276,7 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
                   variant="ghost"
                   size="icon-sm"
                   className="max-sm:col-start-3 max-sm:row-start-1 max-sm:size-8 max-sm:justify-self-end"
-                  aria-label={`Remove line ${idx + 1}`}
+                  aria-label={t("Remove line {n}", { n: idx + 1 })}
                   disabled={draft.items.length === 1}
                   onClick={() => set("items", draft.items.filter((x) => x.id !== l.id))}
                 >
@@ -289,23 +291,23 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
                 className="max-sm:h-10 max-sm:px-3"
                 onClick={() => set("items", [...draft.items, blankLine()])}
               >
-                <PlusIcon /> Add line
+                <PlusIcon /> {t("Add line")}
               </Button>
               <dl className="grid grid-cols-[auto_minmax(0,120px)] items-center gap-x-4 gap-y-2 sm:pr-[44px]">
-                <dt className="t-12 text-right text-fg-2">Subtotal</dt>
+                <dt className="t-12 text-right text-fg-2">{t("Subtotal")}</dt>
                 <dd className="t-14 text-right text-table tabular-nums">{formatMoney(total, draft.currency)}</dd>
-                <dt className="t-14 text-right text-fg">Total</dt>
+                <dt className="t-14 text-right text-fg">{t("Total")}</dt>
                 <dd className="t-16 text-right text-fg tabular-nums">{formatMoney(total, draft.currency)}</dd>
               </dl>
             </div>
           </div>
         </div>
 
-        <Field label="Notes" htmlFor="inv-notes">
+        <Field label={t("Notes")} htmlFor="inv-notes">
           <Textarea
             id="inv-notes"
             rows={2}
-            placeholder="Payment terms, bank details or a thank-you note"
+            placeholder={t("Payment terms, bank details or a thank-you note")}
             value={draft.notes}
             onChange={(e) => set("notes", e.target.value)}
           />
@@ -320,17 +322,17 @@ function EditorForm({ invoiceId, onDone }: { invoiceId?: string; onDone: () => v
         ) : null}
         {/* Phones close the sheet with its X or a swipe; the footer keeps just the save actions */}
         <Button type="button" className="max-sm:hidden" onClick={onDone}>
-          Cancel
+          {t("Cancel")}
         </Button>
         {existing ? (
           <Button type="submit" variant="brand">
-            Save changes
+            {t("Save changes")}
           </Button>
         ) : (
           <>
-            <Button type="submit">Save draft</Button>
+            <Button type="submit">{t("Save draft")}</Button>
             <Button type="button" variant="brand" onClick={() => save("sent")}>
-              Create &amp; send
+              {t("Create & send")}
             </Button>
           </>
         )}

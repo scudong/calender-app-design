@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { StatusBadge } from "@/components/time-off/status-badge";
 import { formatLong, formatTimeRange, formatWeekday } from "@/lib/dates";
 import { formatDuration } from "@/lib/dates";
+import { useT } from "@/hooks/use-i18n";
 import { useIsMobile } from "@/hooks/use-media-query";
 import { useAppStore } from "@/stores/app-store";
 import { useCalendarStore } from "@/stores/calendar-store";
@@ -25,6 +26,7 @@ export function EventPopover() {
   const duplicateEvent = useAppStore((s) => s.duplicateEvent);
 
   const isMobile = useIsMobile();
+  const t = useT();
   const rect = target?.rect;
   const virtualRef = useMemo(
     () => ({
@@ -54,25 +56,25 @@ export function EventPopover() {
             <div className="flex gap-3 p-4">
               <span className="mt-0.5 size-3 shrink-0 rounded-[4px]" style={{ background: `var(--event-${event.color}-fg)` }} />
               <div className="grid min-w-0 flex-1 gap-2">
-                <h3 className="t-16 leading-[1.25] break-words text-fg">{event.title}</h3>
+                <h3 className="t-16 leading-[1.25] break-words text-fg">{t(event.title)}</h3>
                 <p className="t-14 salt text-fg-2">
                   {formatWeekday(event.date)}, {formatLong(event.date)}
                 </p>
                 <p className="t-14 salt text-fg-2">
                   {event.allDay
-                    ? "All day"
+                    ? t("All day")
                     : `${formatTimeRange(event.start, event.end, timeFormat)} · ${formatDuration(event.end - event.start)}`}
                 </p>
                 {event.location && (
                   <p className="t-14 flex items-center gap-1.5 text-fg-2">
-                    <MapPinIcon className="size-3.5 text-icon" /> <span className="truncate">{event.location}</span>
+                    <MapPinIcon className="size-3.5 text-icon" /> <span className="truncate">{t(event.location)}</span>
                   </p>
                 )}
-                {event.note && !request && <p className="t-14 leading-[1.4] text-fg">{event.note}</p>}
+                {event.note && !request && <p className="t-14 leading-[1.4] text-fg">{t(event.note)}</p>}
                 {request && (
                   <div className="flex items-center gap-2 pt-1">
                     <StatusBadge status={request.status} />
-                    <span className="t-12 truncate text-fg-2">{request.duration}</span>
+                    <span className="t-12 truncate text-fg-2">{t(request.duration)}</span>
                   </div>
                 )}
               </div>
@@ -86,7 +88,7 @@ export function EventPopover() {
                     openOverlay({ kind: "request-details", requestId: request.id });
                   }}
                 >
-                  <PlaneIcon /> View request
+                  <PlaneIcon /> {t("View request")}
                 </Button>
               ) : (
                 <Button
@@ -96,7 +98,7 @@ export function EventPopover() {
                     openOverlay({ kind: "event", eventId: event.id });
                   }}
                 >
-                  <PencilIcon /> Edit
+                  <PencilIcon /> {t("Edit")}
                 </Button>
               )}
               <span className="flex-1" />
@@ -105,7 +107,7 @@ export function EventPopover() {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label="Duplicate"
+                    aria-label={t("Duplicate")}
                     onClick={() => {
                       duplicateEvent(event.id);
                       close();
@@ -114,7 +116,7 @@ export function EventPopover() {
                     <CopyIcon />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Duplicate</TooltipContent>
+                <TooltipContent>{t("Duplicate")}</TooltipContent>
               </Tooltip>
               {!request && (
                 <Tooltip>
@@ -122,14 +124,14 @@ export function EventPopover() {
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label="Delete"
+                      aria-label={t("Delete")}
                       onClick={() => deleteCalendarEvent(event.id)}
                     >
                       <Trash2Icon className="text-danger" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Delete <kbd className="ml-1 font-sans opacity-70">⌫</kbd>
+                    {t("Delete")} <kbd className="ml-1 font-sans opacity-70">⌫</kbd>
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -141,11 +143,11 @@ export function EventPopover() {
             <div className="flex gap-3 p-4">
               <span className="mt-0.5 size-3 shrink-0 rounded-[4px] bg-[var(--event-purple-fg)]" />
               <div className="grid min-w-0 flex-1 gap-2">
-                <h3 className="t-16 text-fg">{holiday.name}</h3>
+                <h3 className="t-16 text-fg">{t(holiday.name)}</h3>
                 <p className="t-14 salt text-fg-2">
                   {formatWeekday(holiday.date)}, {formatLong(holiday.date)}
                 </p>
-                <p className="t-14 salt text-fg-2">National holiday · not counted against your allowance</p>
+                <p className="t-14 salt text-fg-2">{t("National holiday · not counted against your allowance")}</p>
               </div>
             </div>
             <div className="flex items-center border-t border-hairline bg-app px-2 py-2">
@@ -156,7 +158,7 @@ export function EventPopover() {
                   openOverlay({ kind: "holidays" });
                 }}
               >
-                <CalendarHeartIcon /> See holiday list
+                <CalendarHeartIcon /> {t("See holiday list")}
               </Button>
             </div>
           </>

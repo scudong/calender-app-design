@@ -21,9 +21,11 @@ describe("leave rules", () => {
   });
 
   it("labels durations naturally", () => {
-    expect(durationLabel(1, 0)).toBe("1 day");
-    expect(durationLabel(2, 4)).toBe("2 days 4 hours");
-    expect(durationLabel(0, 1)).toBe("1 hour");
+    expect(durationLabel(1, 0, "en")).toBe("1 day");
+    expect(durationLabel(2, 4, "en")).toBe("2 days 4 hours");
+    expect(durationLabel(0, 1, "en")).toBe("1 hour");
+    expect(durationLabel(2, 4, "zh")).toBe("2天4小时");
+    expect(durationLabel(0, 1, "zh")).toBe("1小时");
     expect(formatDays(0.75)).toBe("0.75");
     expect(formatDays(7)).toBe("7");
   });

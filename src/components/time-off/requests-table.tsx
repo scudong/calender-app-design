@@ -28,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { formatLong, formatShort } from "@/lib/dates";
 import { LEAVE_COLORS, LEAVE_TYPES } from "@/lib/leave";
 import type { LeaveRequest, LeaveStatus, LeaveType } from "@/lib/types";
+import { useT } from "@/hooks/use-i18n";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { useCalendarStore } from "@/stores/calendar-store";
@@ -89,6 +90,7 @@ export function RequestsTable({
   onFiltersChange: (f: RequestFilters) => void;
   ref?: React.Ref<HTMLElement>;
 }) {
+  const t = useT();
   const requests = useAppStore((s) => s.requests);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>(null);
@@ -154,11 +156,11 @@ export function RequestsTable({
   return (
     <section
       ref={ref}
-      aria-label="Leave and requests"
+      aria-label={t("Leave and requests")}
       className="flex w-full shrink-0 scroll-mt-0 flex-col overflow-hidden border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)]"
     >
       <div className="flex w-full shrink-0 flex-wrap items-center gap-2 overflow-hidden px-4 max-md:gap-y-3 max-md:py-3 md:h-14">
-        <h2 className="t-16 salt min-w-0 flex-1 text-heading max-md:basis-full">Leave and requests</h2>
+        <h2 className="t-16 salt min-w-0 flex-1 text-heading max-md:basis-full">{t("Leave and requests")}</h2>
         <div className="flex items-center gap-2 max-md:w-full">
           <label className="flex h-8 w-60 items-center gap-2 max-md:w-auto max-md:flex-1 rounded-lg border border-control bg-surface px-2.5 transition-[border-color,box-shadow] duration-150 focus-within:border-brand/60 focus-within:ring-3 focus-within:ring-brand/15">
             <Icon name="search" />
@@ -166,12 +168,12 @@ export function RequestsTable({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search"
-              aria-label="Search requests"
+              placeholder={t("Search")}
+              aria-label={t("Search requests")}
               className="t-14 min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-fg-2 [&::-webkit-search-cancel-button]:hidden"
             />
             {query && (
-              <button type="button" aria-label="Clear search" onClick={() => setQuery("")} className="press text-icon hover-fine:text-fg">
+              <button type="button" aria-label={t("Clear search")} onClick={() => setQuery("")} className="press text-icon hover-fine:text-fg">
                 <XIcon className="size-3.5" />
               </button>
             )}
@@ -196,7 +198,7 @@ export function RequestsTable({
           {COLUMNS.map((c) =>
             c.key === "notes" ? (
               <div key={c.key} role="columnheader" className="t-14 min-w-0 flex-1 text-fg-2">
-                {c.label}
+                {t(c.label)}
               </div>
             ) : (
               <button
@@ -208,7 +210,7 @@ export function RequestsTable({
                 className="t-14 group flex shrink-0 items-center gap-1 text-left text-fg-2 outline-none hover-fine:text-fg focus-visible:text-fg"
                 style={{ width: c.width }}
               >
-                {c.label}
+                {t(c.label)}
                 {sort?.key === c.key &&
                   (sort.dir === 1 ? <ArrowUpIcon className="size-3 text-fg" /> : <ArrowDownIcon className="size-3 text-fg" />)}
               </button>
@@ -224,8 +226,8 @@ export function RequestsTable({
         {rows.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-12 text-center">
             <SearchXIcon className="size-5 text-icon" />
-            <p className="t-14 text-fg">No requests match</p>
-            <p className="t-12 text-fg-2">Try a different search or reset the filters.</p>
+            <p className="t-14 text-fg">{t("No requests match")}</p>
+            <p className="t-12 text-fg-2">{t("Try a different search or reset the filters.")}</p>
             <Button
               size="sm"
               className="mt-1"
@@ -235,7 +237,7 @@ export function RequestsTable({
                 onFiltersChange(DEFAULT_FILTERS);
               }}
             >
-              Reset
+              {t("Reset")}
             </Button>
           </div>
         )}
@@ -245,6 +247,7 @@ export function RequestsTable({
 }
 
 function RequestRow({ request: r }: { request: LeaveRequest }) {
+  const t = useT();
   const router = useRouter();
   const today = useToday();
   const setStatus = useAppStore((s) => s.setRequestStatus);
@@ -270,7 +273,7 @@ function RequestRow({ request: r }: { request: LeaveRequest }) {
       <div role="cell" className="grid min-w-0 flex-1 gap-1.5 md:hidden">
         <div className="flex min-w-0 items-center gap-2">
           <StatusBadge status={r.status} />
-          <span className="t-14 min-w-0 truncate text-table">{r.type}</span>
+          <span className="t-14 min-w-0 truncate text-table">{t(r.type)}</span>
           <span className="t-12 ml-auto shrink-0 text-fg-2">{r.duration}</span>
         </div>
         <p className="t-14 text-table">
@@ -283,7 +286,7 @@ function RequestRow({ request: r }: { request: LeaveRequest }) {
         <StatusBadge status={r.status} />
       </div>
       <div role="cell" className="t-14 w-[120px] shrink-0 truncate text-table">
-        {r.type}
+        {t(r.type)}
       </div>
       <div role="cell" className="t-14 w-[140px] shrink-0 truncate text-table">
         {r.duration}
@@ -303,45 +306,45 @@ function RequestRow({ request: r }: { request: LeaveRequest }) {
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-lg" aria-label={`Actions for ${r.notes}`} className="border-transparent max-md:-mt-1 max-md:-mr-2 max-md:size-10">
+                <Button variant="ghost" size="icon-lg" aria-label={t("Actions for {notes}", { notes: r.notes })} className="border-transparent max-md:-mt-1 max-md:-mr-2 max-md:size-10">
                   <Icon name="more" />
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
-            <TooltipContent>Actions</TooltipContent>
+            <TooltipContent>{t("Actions")}</TooltipContent>
           </Tooltip>
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuItem onSelect={() => openOverlay({ kind: "request-details", requestId: r.id })}>
-              <EyeIcon /> View details
+              <EyeIcon /> {t("View details")}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={showInCalendar}>
-              <CalendarSearchIcon /> Show in calendar
+              <CalendarSearchIcon /> {t("Show in calendar")}
             </DropdownMenuItem>
             {r.status === "pending" && (
               <DropdownMenuItem onSelect={() => openOverlay({ kind: "request", requestId: r.id })}>
-                <PencilIcon /> Edit request
+                <PencilIcon /> {t("Edit request")}
               </DropdownMenuItem>
             )}
             {canCancel && (
               <DropdownMenuItem onSelect={() => setStatus(r.id, "cancelled")}>
-                <XIcon /> Cancel request
+                <XIcon /> {t("Cancel request")}
               </DropdownMenuItem>
             )}
             {r.status === "pending" && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="t-12 text-fg-2">Manager preview</DropdownMenuLabel>
+                <DropdownMenuLabel className="t-12 text-fg-2">{t("Manager preview")}</DropdownMenuLabel>
                 <DropdownMenuItem onSelect={() => setStatus(r.id, "approved")}>
-                  <CheckIcon /> Approve
+                  <CheckIcon /> {t("Approve")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setStatus(r.id, "declined")}>
-                  <XIcon /> Decline
+                  <XIcon /> {t("Decline")}
                 </DropdownMenuItem>
               </>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => deleteRequest(r.id)}>
-              <Trash2Icon /> Delete
+              <Trash2Icon /> {t("Delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

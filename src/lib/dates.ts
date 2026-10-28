@@ -1,5 +1,6 @@
 // Pure date helpers. Days are "YYYY-MM-DD" keys in local time so nothing
 // drifts across time zones or between server and client renders.
+import { getActiveLang, type Lang } from "./i18n";
 
 export const MONTHS = [
   "January",
@@ -16,8 +17,32 @@ export const MONTHS = [
   "December",
 ];
 export const MONTHS_SHORT = MONTHS.map((m) => m.slice(0, 3));
+export const MONTHS_ZH = [
+  "1月",
+  "2月",
+  "3月",
+  "4月",
+  "5月",
+  "6月",
+  "7月",
+  "8月",
+  "9月",
+  "10月",
+  "11月",
+  "12月",
+];
 export const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 export const WEEKDAYS_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+export const WEEKDAYS_ZH = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+export const WEEKDAYS_SHORT_ZH = ["日", "一", "二", "三", "四", "五", "六"];
+
+export function monthNames(lang: Lang = getActiveLang()): string[] {
+  return lang === "zh" ? MONTHS_ZH : MONTHS;
+}
+
+export function weekdayShortNames(lang: Lang = getActiveLang()): string[] {
+  return lang === "zh" ? WEEKDAYS_SHORT_ZH : WEEKDAYS_SHORT;
+}
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -102,46 +127,70 @@ export function isWeekend(key: string): boolean {
   return d === 0 || d === 6;
 }
 
-export function monthName(key: string): string {
-  return MONTHS[fromKey(key).getMonth()];
+export function monthName(key: string, lang: Lang = getActiveLang()): string {
+  return monthNames(lang)[fromKey(key).getMonth()];
 }
 
-export function formatLong(key: string): string {
+/** Short month label, e.g. "Nov" / "11月". */
+export function monthShort(key: string, lang: Lang = getActiveLang()): string {
+  const m = fromKey(key).getMonth();
+  return lang === "zh" ? MONTHS_ZH[m] : MONTHS_SHORT[m];
+}
+
+/** Short weekday label, e.g. "SUN" / "日". */
+export function weekdayShort(key: string, lang: Lang = getActiveLang()): string {
+  return weekdayShortNames(lang)[dayOfWeek(key)];
+}
+
+/** Short weekday label from a Date, kept for callers that already have one. */
+export function weekdayShortFromDate(d: Date, lang: Lang = getActiveLang()): string {
+  return weekdayShortNames(lang)[d.getDay()];
+}
+
+export function formatLong(key: string, lang: Lang = getActiveLang()): string {
   const d = fromKey(key);
+  if (lang === "zh") return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
   return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-export function formatShort(key: string): string {
+export function formatShort(key: string, lang: Lang = getActiveLang()): string {
   const d = fromKey(key);
+  if (lang === "zh") return `${d.getMonth() + 1}月${d.getDate()}日`;
   return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
 }
 
-export function formatWeekday(key: string): string {
-  return WEEKDAYS[dayOfWeek(key)];
+/** Month and day only, e.g. "Nov 10" / "11月10日". */
+export function formatMonthDay(key: string, lang: Lang = getActiveLang()): string {
+  return formatShort(key, lang);
 }
 
-export function formatRange(from: string, to: string): string {
+export function formatWeekday(key: string, lang: Lang = getActiveLang()): string {
+  return lang === "zh" ? WEEKDAYS_ZH[dayOfWeek(key)] : WEEKDAYS[dayOfWeek(key)];
+}
+
+export function formatRange(from: string, to: string, lang: Lang = getActiveLang()): string {
   const a = fromKey(from);
   const b = fromKey(to);
   if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()) {
+    if (lang === "zh") return `${a.getMonth() + 1}月${a.getDate()}日 – ${b.getDate()}日`;
     return `${MONTHS_SHORT[a.getMonth()]} ${a.getDate()} – ${b.getDate()}`;
   }
-  return `${formatShort(from)} – ${formatShort(to)}`;
+  return `${formatShort(from, lang)} – ${formatShort(to, lang)}`;
 }
 
-export function formatTime(minutes: number, format: "24h" | "12h" = "24h"): string {
+export function formatTime(minutes: number, format: "24h" | "12h" = "24h", lang: Lang = getActiveLang()): string {
   const m = ((minutes % 1440) + 1440) % 1440;
   const h = Math.floor(m / 60);
   const mm = m % 60;
-  if (minutes === 1440) return format === "24h" ? "24:00" : "12:00 AM";
+  if (minutes === 1440) return format === "24h" ? "24:00" : lang === "zh" ? "上午 12:00" : "12:00 AM";
   if (format === "24h") return `${pad(h)}:${pad(mm)}`;
-  const suffix = h < 12 ? "AM" : "PM";
+  const suffix = lang === "zh" ? (h < 12 ? "上午" : "下午") : h < 12 ? "AM" : "PM";
   const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${pad(mm)} ${suffix}`;
+  return lang === "zh" ? `${suffix} ${h12}:${pad(mm)}` : `${h12}:${pad(mm)} ${suffix}`;
 }
 
-export function formatTimeRange(start: number, end: number, format: "24h" | "12h" = "24h") {
-  return `${formatTime(start, format)} – ${formatTime(end, format)}`;
+export function formatTimeRange(start: number, end: number, format: "24h" | "12h" = "24h", lang: Lang = getActiveLang()) {
+  return `${formatTime(start, format, lang)} – ${formatTime(end, format, lang)}`;
 }
 
 export function parseTime(value: string): number {
@@ -162,9 +211,19 @@ export function formatDuration(minutes: number): string {
   return `${m}m`;
 }
 
-export function relativeTime(iso: string, now: number): string {
+export function relativeTime(iso: string, now: number, lang: Lang = getActiveLang()): string {
   const diff = Math.max(0, now - new Date(iso).getTime());
   const min = Math.floor(diff / 60000);
+  if (lang === "zh") {
+    if (min < 1) return "刚刚";
+    if (min < 60) return `${min}分钟前`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `${h}小时前`;
+    const d = Math.floor(h / 24);
+    if (d < 7) return `${d}天前`;
+    const date = new Date(iso);
+    return `${date.getMonth() + 1}月${date.getDate()}日`;
+  }
   if (min < 1) return "Just now";
   if (min < 60) return `${min}m ago`;
   const h = Math.floor(min / 60);

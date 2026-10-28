@@ -10,29 +10,29 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"], weight: ["60
 
 const SITE_URL = "https://calender-app-design.vercel.app";
 const DESCRIPTION =
-  "A calm people-ops workspace: plan time off, track leave requests and balances, and manage your work calendar. A Kargul Studio design prototype.";
+  "一个从容的人力运营工作台：规划休假、追踪请假申请与余额，管理你的工作日历。Kargul Studio 设计原型。";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: "Time off · Kargul Workspace", template: "%s · Kargul Workspace" },
+  title: { default: "休假 · Kargul 工作台", template: "%s · Kargul 工作台" },
   description: DESCRIPTION,
-  applicationName: "Kargul Workspace",
+  applicationName: "Kargul 工作台",
   authors: [{ name: "Kargul Studio", url: "https://kargul.studio" }],
   creator: "Kargul Studio",
   publisher: "Kargul Studio",
-  keywords: ["time off", "leave management", "calendar", "HR", "people ops", "design prototype", "Kargul Studio"],
+  keywords: ["休假", "请假管理", "日历", "人力资源", "人力运营", "设计原型", "Kargul Studio"],
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     url: "/",
-    siteName: "Kargul Calender Design Prototype",
-    title: "Kargul Workspace — Time off & calendar",
+    siteName: "Kargul 日历设计原型",
+    title: "Kargul 工作台 — 休假与日历",
     description: DESCRIPTION,
-    locale: "en_US",
+    locale: "zh_CN",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kargul Workspace — Time off & calendar",
+    title: "Kargul 工作台 — 休假与日历",
     description: DESCRIPTION,
   },
   appleWebApp: { capable: true, title: "Kargul", statusBarStyle: "default" },
@@ -49,7 +49,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="zh-CN"
       data-theme="light"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} h-full`}

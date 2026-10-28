@@ -17,12 +17,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { NAV_GROUPS, SETTINGS_ITEM, type NavItem } from "@/lib/nav";
+import { useT } from "@/hooks/use-i18n";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app-store";
 
 const noopSubscribe = () => () => {};
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+  const t = useT();
   return (
     <Link
       href={item.href}
@@ -34,7 +36,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       )}
     >
       <Icon name={item.icon} className={active && item.icon === "nav-calendar" ? "text-brand" : undefined} />
-      <span className="t-14 salt min-w-0 flex-1 truncate">{item.label}</span>
+      <span className="t-14 salt min-w-0 flex-1 truncate">{t(item.label)}</span>
     </Link>
   );
 }
@@ -49,17 +51,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function ThemeRow() {
   const { resolvedTheme, setTheme } = useTheme();
+  const t = useT();
   // next-themes only knows the stored theme after mount.
   const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const dark = mounted && resolvedTheme === "dark";
   return (
     <label className="flex h-8 w-full max-lg:h-10 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-fg-2 transition-colors duration-150 hover-fine:bg-hover">
       <Icon name="moon" />
-      <span className="t-14 salt min-w-0 flex-1">Dark mode</span>
+      <span className="t-14 salt min-w-0 flex-1">{t("Dark mode")}</span>
       <Switch
         checked={dark}
         onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
-        aria-label="Dark mode"
+        aria-label={t("Dark mode")}
         className="mr-0"
       />
     </label>
@@ -68,6 +71,7 @@ function ThemeRow() {
 
 function AccountMenu() {
   const profile = useAppStore((s) => s.profile);
+  const t = useT();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -87,24 +91,24 @@ function AccountMenu() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" sideOffset={8} className="w-[215px]">
-        <DropdownMenuLabel className="t-12 text-fg-2">Signed in as {profile.email}</DropdownMenuLabel>
+        <DropdownMenuLabel className="t-12 text-fg-2">{t("Signed in as {email}", { email: profile.email })}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/personal-details">
-            <UserIcon /> Personal details
+            <UserIcon /> {t("Personal details")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/settings">
-            <SettingsIcon /> Settings
+            <SettingsIcon /> {t("Settings")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           variant="destructive"
-          onSelect={() => toast("Signed out", { description: "This is a demo — your data stays in this browser." })}
+          onSelect={() => toast(t("Signed out"), { description: t("This is a demo — your data stays in this browser.") })}
         >
-          <LogOutIcon /> Sign out
+          <LogOutIcon /> {t("Sign out")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -114,14 +118,15 @@ function AccountMenu() {
 /** Navigation + utilities, shared by the desktop sidebar and the mobile nav sheet. */
 export function SidebarBody({ className }: { className?: string }) {
   const pathname = usePathname();
+  const t = useT();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col justify-between gap-6 overflow-y-auto p-3 [scrollbar-width:none]", className)}>
-      <nav aria-label="Primary" className="flex w-full flex-col gap-4">
+      <nav aria-label={t("Primary")} className="flex w-full flex-col gap-4">
         {NAV_GROUPS.map((group) => (
           <div key={group.label} className="flex w-full flex-col gap-0.5">
-            <SectionLabel>{group.label}</SectionLabel>
+            <SectionLabel>{t(group.label)}</SectionLabel>
             {group.items.map((item) => (
               <NavLink key={item.href} item={item} active={isActive(item.href)} />
             ))}

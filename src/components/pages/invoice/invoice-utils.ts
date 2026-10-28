@@ -1,4 +1,5 @@
 import { formatLong } from "@/lib/dates";
+import { translate, type Vars } from "@/lib/i18n";
 import type { Invoice, InvoiceItem, InvoiceStatus, Profile } from "@/lib/types";
 
 export const CURRENCIES = ["USD", "EUR", "GBP", "INR"] as const;
@@ -49,6 +50,8 @@ const esc = (s: string) =>
 
 /** Standalone, print-ready HTML document for an invoice (used for Print and Download). */
 export function invoiceHtml(inv: Invoice, from: Profile): string {
+  // Non-React module: read the active language from the module singleton.
+  const t = (text: string, vars?: Vars) => translate(text, vars);
   const total = invoiceTotal(inv);
   const rows = inv.items
     .map(
@@ -90,7 +93,7 @@ export function invoiceHtml(inv: Invoice, from: Profile): string {
 <div class="doc">
   <header>
     <div>
-      <h1>Invoice</h1>
+      <h1>${t("Invoice")}</h1>
       <div class="muted">${esc(inv.number)}</div>
     </div>
     <div style="text-align:right">
@@ -100,19 +103,19 @@ export function invoiceHtml(inv: Invoice, from: Profile): string {
     </div>
   </header>
   <section class="grid">
-    <div><div class="label">Bill to</div><strong>${esc(inv.client)}</strong></div>
-    <div><div class="label">Issued</div>${formatLong(inv.issueDate)}</div>
-    <div><div class="label">Due</div>${formatLong(inv.dueDate)}</div>
+    <div><div class="label">${t("Bill to")}</div><strong>${esc(inv.client)}</strong></div>
+    <div><div class="label">${t("Issued")}</div>${formatLong(inv.issueDate)}</div>
+    <div><div class="label">${t("Due")}</div>${formatLong(inv.dueDate)}</div>
   </section>
   <table>
-    <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
+    <thead><tr><th>${t("Description")}</th><th class="num">${t("Qty")}</th><th class="num">${t("Rate")}</th><th class="num">${t("Amount")}</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   <div class="totals">
-    <div><span class="muted">Subtotal</span><span class="num">${formatMoney(total, inv.currency)}</span></div>
-    <div class="grand"><span>Total due</span><span class="num">${formatMoney(total, inv.currency)}</span></div>
+    <div><span class="muted">${t("Subtotal")}</span><span class="num">${formatMoney(total, inv.currency)}</span></div>
+    <div class="grand"><span>${t("Total due")}</span><span class="num">${formatMoney(total, inv.currency)}</span></div>
   </div>
-  ${inv.notes.trim() ? `<div class="notes"><div class="label">Notes</div>${esc(inv.notes)}</div>` : ""}
+  ${inv.notes.trim() ? `<div class="notes"><div class="label">${t("Notes")}</div>${esc(inv.notes)}</div>` : ""}
 </div>
 </body>
 </html>`;

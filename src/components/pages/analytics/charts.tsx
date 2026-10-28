@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChartColumnIcon, TableIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { Card, CardHeader } from "@/components/pages/shared/page-chrome";
 
 /**
@@ -54,6 +55,7 @@ export function ChartCard({
   className?: string;
 }) {
   const [view, setView] = useState<"chart" | "table">("chart");
+  const t = useT();
   const showLegend = !!legend && legend.length > 1 && view === "chart";
   return (
     <Card className={className}>
@@ -63,11 +65,11 @@ export function ChartCard({
         actions={
           <>
             {actions ? <div className="hidden md:contents">{actions}</div> : null}
-            <div className="flex items-center rounded-lg bg-app p-0.5" role="group" aria-label="View">
-              <ToggleIcon active={view === "chart"} label="Chart view" onClick={() => setView("chart")}>
+            <div className="flex items-center rounded-lg bg-app p-0.5" role="group" aria-label={t("View")}>
+              <ToggleIcon active={view === "chart"} label={t("Chart view")} onClick={() => setView("chart")}>
                 <ChartColumnIcon />
               </ToggleIcon>
-              <ToggleIcon active={view === "table"} label="Table view" onClick={() => setView("table")}>
+              <ToggleIcon active={view === "table"} label={t("Table view")} onClick={() => setView("table")}>
                 <TableIcon />
               </ToggleIcon>
             </div>
@@ -124,12 +126,13 @@ function ToggleIcon({
 }
 
 export function Legend({ series, className }: { series: Series[]; className?: string }) {
+  const t = useT();
   return (
     <ul className={cn("flex flex-wrap items-center gap-4", className)}>
       {series.map((s) => (
         <li key={s.id} className="t-12 flex items-center gap-1.5 text-fg-2">
           <span className="size-2.5 rounded-[3px]" style={{ background: s.color }} aria-hidden />
-          {s.label}
+          {t(s.label)}
         </li>
       ))}
     </ul>
@@ -186,6 +189,7 @@ export function ColumnChart({
   /** Ticks are rounded in this unit (e.g. 60 to get whole hours from minutes). */
   unit?: number;
 }) {
+  const t = useT();
   const totals = columns.map((c) => c.values.reduce((a, v) => a + v, 0));
   const max = Math.max(0, ...totals);
   const scaled = niceScale(max / unit);
@@ -232,7 +236,7 @@ export function ColumnChart({
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      aria-label={`${c.title}: ${series.map((s, si) => `${s.label} ${format(c.values[si])}`).join(", ")}`}
+                      aria-label={`${c.title}: ${series.map((s, si) => `${t(s.label)} ${format(c.values[si])}`).join(", ")}`}
                       className="group relative flex h-full flex-col items-center justify-end rounded-md px-0.5 outline-none focus-visible:bg-hover"
                     >
                       {i === peak ? (
@@ -264,12 +268,12 @@ export function ColumnChart({
                     {series.length > 1 ? (
                       <>
                         {series.map((s, si) => (
-                          <TipRow key={s.id} color={s.color} value={format(c.values[si])} label={s.label} />
+                          <TipRow key={s.id} color={s.color} value={format(c.values[si])} label={t(s.label)} />
                         ))}
-                        <TipRow value={format(total)} label="Total" />
+                        <TipRow value={format(total)} label={t("Total")} />
                       </>
                     ) : (
-                      <TipRow value={format(total)} label={series[0].label} />
+                      <TipRow value={format(total)} label={t(series[0].label)} />
                     )}
                   </TooltipContent>
                 </Tooltip>

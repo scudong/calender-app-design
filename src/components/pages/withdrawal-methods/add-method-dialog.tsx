@@ -18,6 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { WithdrawalKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useAppStore } from "@/stores/app-store";
 import { KIND_META, KINDS, KindTile, masked, PAYOUT_CURRENCIES } from "./shared";
 
@@ -50,6 +51,7 @@ export function AddMethodDialog({ open, session, onClose }: { open: boolean; ses
 }
 
 function AddMethodForm({ onDone }: { onDone: () => void }) {
+  const t = useT();
   const profile = useAppStore((s) => s.profile);
   const addWithdrawalMethod = useAppStore((s) => s.addWithdrawalMethod);
   const [kind, setKind] = useState<WithdrawalKind>("bank");
@@ -92,15 +94,15 @@ function AddMethodForm({ onDone }: { onDone: () => void }) {
           currency,
         });
         setNumber("");
-        toast.success("Withdrawal method added", {
+        toast.success(t("Withdrawal method added"), {
           description: [label, masked(last4), currency].filter(Boolean).join(" · "),
         });
         onDone();
       }}
     >
       <DialogHeader className="gap-1.5">
-        <DialogTitle className="t-16">Add withdrawal method</DialogTitle>
-        <DialogDescription className="t-14">Choose where your payouts should land.</DialogDescription>
+        <DialogTitle className="t-16">{t("Add withdrawal method")}</DialogTitle>
+        <DialogDescription className="t-14">{t("Choose where your payouts should land.")}</DialogDescription>
       </DialogHeader>
 
       <RadioGroup
@@ -110,7 +112,7 @@ function AddMethodForm({ onDone }: { onDone: () => void }) {
           setNumber("");
         }}
         className="grid grid-cols-2 gap-2 sm:grid-cols-4"
-        aria-label="Method type"
+        aria-label={t("Method type")}
       >
         {KINDS.map((k) => (
           <label
@@ -123,8 +125,8 @@ function AddMethodForm({ onDone }: { onDone: () => void }) {
             <RadioGroupItem value={k.kind} className="absolute top-2.5 right-2.5" />
             <KindTile kind={k.kind} className="size-7 rounded-md [&_svg]:size-3.5" />
             <span className="flex flex-col gap-1">
-              <span className="t-14 text-fg">{k.kind === "bank" ? "Bank" : k.label}</span>
-              <span className="t-12 text-fg-2">{k.hint}</span>
+              <span className="t-14 text-fg">{k.kind === "bank" ? t("Bank") : t(k.label)}</span>
+              <span className="t-12 text-fg-2">{t(k.hint)}</span>
             </span>
           </label>
         ))}
@@ -133,9 +135,9 @@ function AddMethodForm({ onDone }: { onDone: () => void }) {
       <div className="grid gap-4">
         {kind === "paypal" || kind === "wise" ? (
           <Field
-            label={`${KIND_META[kind].label} email`}
+            label={t("{kind} email", { kind: KIND_META[kind].label })}
             htmlFor="wm-email"
-            error={email && !emailValid ? "Enter a valid email address." : null}
+            error={email && !emailValid ? t("Enter a valid email address.") : null}
           >
             <Input
               id="wm-email"
@@ -149,15 +151,15 @@ function AddMethodForm({ onDone }: { onDone: () => void }) {
         ) : (
           <>
             <div className={cn("grid gap-4 sm:gap-3", kind === "bank" && "sm:grid-cols-2")}>
-              <Field label={kind === "card" ? "Name on card" : "Account holder"} htmlFor="wm-holder">
+              <Field label={kind === "card" ? t("Name on card") : t("Account holder")} htmlFor="wm-holder">
                 <Input id="wm-holder" required value={holder} onChange={(e) => setHolder(e.target.value)} />
               </Field>
               {kind === "bank" && (
-                <Field label="Bank name" htmlFor="wm-bank">
+                <Field label={t("Bank name")} htmlFor="wm-bank">
                   <Input
                     id="wm-bank"
                     required
-                    placeholder="e.g. Monzo"
+                    placeholder={t("e.g. Monzo")}
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
                   />
@@ -165,10 +167,10 @@ function AddMethodForm({ onDone }: { onDone: () => void }) {
               )}
             </div>
             <Field
-              label={kind === "card" ? "Card number" : "Account number"}
+              label={kind === "card" ? t("Card number") : t("Account number")}
               htmlFor="wm-number"
-              error={numberError ? `Enter at least ${minDigits} digits.` : null}
-              hint={preview ? `Saved as ${preview}` : "Only the last 4 digits are kept."}
+              error={numberError ? t("Enter at least {n} digits.", { n: minDigits }) : null}
+              hint={preview ? t("Saved as {preview}", { preview }) : t("Only the last 4 digits are kept.")}
             >
               <Input
                 id="wm-number"
@@ -185,7 +187,7 @@ function AddMethodForm({ onDone }: { onDone: () => void }) {
           </>
         )}
 
-        <Field label="Payout currency" htmlFor="wm-currency">
+        <Field label={t("Payout currency")} htmlFor="wm-currency">
           <Select value={currency} onValueChange={setCurrency}>
             <SelectTrigger id="wm-currency" className="w-full">
               <SelectValue />
@@ -203,18 +205,18 @@ function AddMethodForm({ onDone }: { onDone: () => void }) {
         <p className="t-12 flex items-start gap-2 rounded-lg border border-hairline bg-app px-3 py-2.5 leading-[1.4] text-fg-2">
           <ShieldCheckIcon className="mt-px size-3.5 shrink-0 text-icon" />
           <span>
-            <span className="text-fg">Demo only — please don’t enter real details.</span> Full account and card numbers
-            are never stored; this app keeps just the last 4 digits for display.
+            <span className="text-fg">{t("Demo only — please don’t enter real details.")}</span>{" "}
+            {t("Full account and card numbers are never stored; this app keeps just the last 4 digits for display.")}
           </span>
         </p>
       </div>
 
       <DialogFooter className="-mx-5 -mb-5 bg-app px-5 py-3 max-sm:mb-0 max-sm:pb-[max(12px,env(safe-area-inset-bottom))] max-sm:[&_button]:h-10">
         <Button type="button" onClick={onDone}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <Button type="submit" variant="brand" disabled={!valid}>
-          Add method
+          {t("Add method")}
         </Button>
       </DialogFooter>
     </form>

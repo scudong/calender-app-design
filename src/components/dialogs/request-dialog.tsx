@@ -19,6 +19,7 @@ import { formatLong, parseTime, timeInputValue } from "@/lib/dates";
 import { computeLeaveStats, formatDays, LEAVE_COLORS, LEAVE_TYPES } from "@/lib/leave";
 import type { LeaveRequest, LeaveType } from "@/lib/types";
 import { useToday } from "@/hooks/use-today";
+import { useT } from "@/hooks/use-i18n";
 import { useAppStore, type RequestInput } from "@/stores/app-store";
 import { useCalendarStore } from "@/stores/calendar-store";
 import { Field } from "./field";
@@ -59,6 +60,7 @@ function RequestForm({ requestId, from, onDone }: { requestId?: string; from?: s
   const holidays = useAppStore((s) => s.holidays);
   const measure = useAppStore((s) => s.measureRequest);
   const submit = useAppStore((s) => s.submitRequest);
+  const t = useT();
   const existing = requests.find((r) => r.id === requestId);
 
   const [form, setForm] = useState<RequestInput>(() =>
@@ -74,11 +76,11 @@ function RequestForm({ requestId, from, onDone }: { requestId?: string; from?: s
 
   const error =
     form.allDay && form.to < form.from
-      ? "End date must be on or after the start date."
+      ? t("End date must be on or after the start date.")
       : !form.allDay && form.end <= form.start
-        ? "End time must be after the start time."
+        ? t("End time must be after the start time.")
         : form.allDay && measured.days === 0
-          ? "These dates fall on weekends or holidays — nothing to request."
+          ? t("These dates fall on weekends or holidays — nothing to request.")
           : null;
   const remaining = stats.available - measured.days;
 
@@ -93,23 +95,23 @@ function RequestForm({ requestId, from, onDone }: { requestId?: string; from?: s
       }}
     >
       <DialogHeader className="gap-1.5">
-        <DialogTitle className="t-16">{existing ? "Edit request" : "Request time-off"}</DialogTitle>
+        <DialogTitle className="t-16">{t(existing ? "Edit request" : "Request time-off")}</DialogTitle>
         <DialogDescription className="t-14">
-          {existing ? "Changes are sent back to your manager for approval." : "Your manager is notified as soon as you submit."}
+          {t(existing ? "Changes are sent back to your manager for approval." : "Your manager is notified as soon as you submit.")}
         </DialogDescription>
       </DialogHeader>
 
       <div className="grid gap-4">
-        <Field label="Leave type" htmlFor="rq-type">
+        <Field label={t("Leave type")} htmlFor="rq-type">
           <Select value={form.type} onValueChange={(v) => set("type", v as LeaveType)}>
             <SelectTrigger id="rq-type" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {LEAVE_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  <span className="size-2 rounded-full" style={{ background: `var(--event-${LEAVE_COLORS[t]}-fg)` }} />
-                  {t}
+              {LEAVE_TYPES.map((type) => (
+                <SelectItem key={type} value={type}>
+                  <span className="size-2 rounded-full" style={{ background: `var(--event-${LEAVE_COLORS[type]}-fg)` }} />
+                  {t(type)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -118,15 +120,15 @@ function RequestForm({ requestId, from, onDone }: { requestId?: string; from?: s
 
         <label className="flex items-center justify-between gap-3 rounded-lg border border-control bg-app px-3 py-2.5">
           <span className="grid gap-1">
-            <span className="t-14 text-fg">Full days</span>
-            <span className="t-12 text-fg-2">Turn off to request a few hours on one day</span>
+            <span className="t-14 text-fg">{t("Full days")}</span>
+            <span className="t-12 text-fg-2">{t("Turn off to request a few hours on one day")}</span>
           </span>
           <Switch checked={form.allDay} onCheckedChange={(v) => set("allDay", v)} />
         </label>
 
         {form.allDay ? (
           <div className="grid grid-cols-2 gap-3">
-            <Field label="From" htmlFor="rq-from">
+            <Field label={t("From")} htmlFor="rq-from">
               <Input
                 id="rq-from"
                 type="date"
@@ -138,16 +140,16 @@ function RequestForm({ requestId, from, onDone }: { requestId?: string; from?: s
                 }}
               />
             </Field>
-            <Field label="To" htmlFor="rq-to">
+            <Field label={t("To")} htmlFor="rq-to">
               <Input id="rq-to" type="date" required min={form.from} value={form.to} onChange={(e) => set("to", e.target.value)} />
             </Field>
           </div>
         ) : (
           <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-3 max-sm:grid-cols-2 max-sm:[&>*:first-child]:col-span-2">
-            <Field label="Date" htmlFor="rq-date">
+            <Field label={t("Date")} htmlFor="rq-date">
               <Input id="rq-date" type="date" required value={form.from} onChange={(e) => set("from", e.target.value)} />
             </Field>
-            <Field label="From" htmlFor="rq-start">
+            <Field label={t("From")} htmlFor="rq-start">
               <Input
                 id="rq-start"
                 type="time"
@@ -156,7 +158,7 @@ function RequestForm({ requestId, from, onDone }: { requestId?: string; from?: s
                 onChange={(e) => set("start", parseTime(e.target.value))}
               />
             </Field>
-            <Field label="To" htmlFor="rq-end">
+            <Field label={t("To")} htmlFor="rq-end">
               <Input
                 id="rq-end"
                 type="time"
@@ -168,11 +170,11 @@ function RequestForm({ requestId, from, onDone }: { requestId?: string; from?: s
           </div>
         )}
 
-        <Field label="Notes" htmlFor="rq-notes">
+        <Field label={t("Notes")} htmlFor="rq-notes">
           <Textarea
             id="rq-notes"
             rows={3}
-            placeholder="Add context for your manager (optional)"
+            placeholder={t("Add context for your manager (optional)")}
             value={form.notes}
             onChange={(e) => set("notes", e.target.value)}
           />
@@ -180,13 +182,13 @@ function RequestForm({ requestId, from, onDone }: { requestId?: string; from?: s
 
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-hairline bg-hairline">
           <div className="grid gap-2 bg-app px-3 py-2.5">
-            <span className="t-12 text-fg-2">Duration</span>
+            <span className="t-12 text-fg-2">{t("Duration")}</span>
             <span className="t-14 text-fg">{error ? "—" : measured.label}</span>
           </div>
           <div className="grid gap-2 bg-app px-3 py-2.5">
-            <span className="t-12 text-fg-2">Balance after request</span>
+            <span className="t-12 text-fg-2">{t("Balance after request")}</span>
             <span className={remaining < 0 ? "t-14 text-danger" : "t-14 text-fg"}>
-              {formatDays(Math.max(remaining, -99))} {Math.abs(remaining) === 1 ? "day" : "days"}
+              {formatDays(Math.max(remaining, -99))} {t(Math.abs(remaining) === 1 ? "day" : "days")}
             </span>
           </div>
         </div>
@@ -197,21 +199,24 @@ function RequestForm({ requestId, from, onDone }: { requestId?: string; from?: s
           </p>
         ) : remaining < 0 ? (
           <p className="t-12 flex items-center gap-1.5 text-warning">
-            <AlertTriangleIcon className="size-3.5" /> This exceeds your balance — it may be unpaid leave.
+            <AlertTriangleIcon className="size-3.5" /> {t("This exceeds your balance — it may be unpaid leave.")}
           </p>
         ) : form.allDay && form.from !== form.to ? (
           <p className="t-12 text-fg-2">
-            {formatLong(form.from)} – {formatLong(form.to)} · weekends and public holidays aren’t counted.
+            {t("{from} – {to} · weekends and public holidays aren’t counted.", {
+              from: formatLong(form.from),
+              to: formatLong(form.to),
+            })}
           </p>
         ) : null}
       </div>
 
       <DialogFooter className="-mx-5 -mb-5 bg-app px-5 py-3">
         <Button type="button" onClick={onDone}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <Button type="submit" variant="brand" disabled={!!error}>
-          {existing ? "Save changes" : "Submit request"}
+          {t(existing ? "Save changes" : "Submit request")}
         </Button>
       </DialogFooter>
     </form>

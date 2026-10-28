@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { relativeTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useNow } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 
@@ -18,6 +19,7 @@ export function NotificationsPopover() {
   const markAll = useAppStore((s) => s.markAllNotificationsRead);
   const clear = useAppStore((s) => s.clearNotifications);
   const now = useNow();
+  const t = useT();
   const unread = notifications.filter((n) => !n.read).length;
 
   return (
@@ -25,7 +27,7 @@ export function NotificationsPopover() {
       <Tooltip>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
-            <Button size="icon" aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"} className="relative">
+            <Button size="icon" aria-label={unread ? t("Notifications, {n} unread", { n: unread }) : t("Notifications")} className="relative">
               <Icon name="bell" />
               {unread > 0 && (
                 <span className="absolute top-[5px] right-[5px] size-1.5 rounded-full bg-brand ring-2 ring-surface" />
@@ -33,27 +35,27 @@ export function NotificationsPopover() {
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
-        <TooltipContent>Notifications</TooltipContent>
+        <TooltipContent>{t("Notifications")}</TooltipContent>
       </Tooltip>
       <PopoverContent align="end" sideOffset={8} className="w-[360px] gap-0 p-0">
         <div className="flex h-12 items-center gap-2 border-b border-hairline px-4">
-          <span className="t-14 flex-1 text-fg">Notifications</span>
+          <span className="t-14 flex-1 text-fg">{t("Notifications")}</span>
           {unread > 0 && (
             <Button variant="ghost" size="sm" onClick={markAll} className="t-12">
-              Mark all read
+              {t("Mark all read")}
             </Button>
           )}
           {notifications.length > 0 && (
             <Button variant="ghost" size="sm" onClick={clear} className="t-12">
-              Clear
+              {t("Clear")}
             </Button>
           )}
         </div>
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
             <BellOffIcon className="size-5 text-icon" />
-            <p className="t-14 text-fg">You’re all caught up</p>
-            <p className="t-12 text-fg-2">New approvals and reminders will show up here.</p>
+            <p className="t-14 text-fg">{t("You’re all caught up")}</p>
+            <p className="t-12 text-fg-2">{t("New approvals and reminders will show up here.")}</p>
           </div>
         ) : (
           <ul className="scroll-thin max-h-[360px] overflow-y-auto p-1">

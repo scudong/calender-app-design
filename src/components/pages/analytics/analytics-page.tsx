@@ -9,15 +9,16 @@ import {
   addDays,
   formatDuration,
   formatShort,
+  formatWeekday,
   fromKey,
-  MONTHS,
-  MONTHS_SHORT,
+  monthName,
+  monthShort,
   startOfWeek,
-  WEEKDAYS,
 } from "@/lib/dates";
-import { computeLeaveStats, formatDays, LEAVE_TYPES, plural, workingDays } from "@/lib/leave";
+import { computeLeaveStats, formatDays, LEAVE_TYPES, workingDays } from "@/lib/leave";
 import type { Invoice, InvoiceStatus, LeaveType } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { PageHeader, PageRoot, StatGrid, StatTile } from "@/components/pages/shared/page-chrome";
@@ -35,13 +36,18 @@ function money(amount: number, currency = "USD") {
 }
 
 export function AnalyticsPage() {
+  const t = useT();
   const today = useToday();
   const year = today.slice(0, 4);
   return (
     <PageRoot>
       <PageHeader
-        title="Overview"
-        description={`January 1 – ${MONTHS[fromKey(today).getMonth()]} ${fromKey(today).getDate()}, ${year} · leave, time and revenue at a glance`}
+        title={t("Overview")}
+        description={t("January 1 – {month} {day}, {year} · leave, time and revenue at a glance", {
+          month: monthName(today),
+          day: fromKey(today).getDate(),
+          year,
+        })}
       />
       <div className="grid gap-3 p-4 md:gap-4">
         <KpiRow />
@@ -59,6 +65,7 @@ export function AnalyticsPage() {
 /* ------------------------------------------------------------------ KPIs */
 
 function KpiRow() {
+  const t = useT();
   const today = useToday();
   const requests = useAppStore((s) => s.requests);
   const settings = useAppStore((s) => s.settings);
@@ -93,27 +100,33 @@ function KpiRow() {
     <StatGrid>
       <StatTile
         icon="holidays"
-        label="Days off approved"
+        label={t("Days off approved")}
         value={formatDays(stats.taken + stats.upcoming)}
-        hint={`${formatDays(stats.taken)} taken · ${formatDays(stats.upcoming)} booked ahead`}
+        hint={t("{taken} taken · {booked} booked ahead", {
+          taken: formatDays(stats.taken),
+          booked: formatDays(stats.upcoming),
+        })}
       />
       <StatTile
         icon="available"
-        label="Approval rate"
+        label={t("Approval rate")}
         value={kpis.decided ? `${Math.round((kpis.approved / kpis.decided) * 100)}%` : "—"}
-        hint={`${plural(kpis.thisYear.length, "request", "requests")} · ${stats.pendingCount} pending`}
+        hint={t("{requests} · {n} pending", {
+          requests: t(kpis.thisYear.length === 1 ? "{n} request" : "{n} requests", { n: kpis.thisYear.length }),
+          n: stats.pendingCount,
+        })}
       />
       <StatTile
         icon="per-year"
-        label="Hours, last 30 days"
+        label={t("Hours, last 30 days")}
         value={fmtHours(kpis.minutes)}
-        hint={kpis.minutes ? `${Math.round((kpis.billable / kpis.minutes) * 100)}% billable` : "No time tracked"}
+        hint={kpis.minutes ? t("{pct}% billable", { pct: Math.round((kpis.billable / kpis.minutes) * 100) }) : t("No time tracked")}
       />
       <StatTile
         icon="upcoming"
-        label="Revenue collected"
+        label={t("Revenue collected")}
         value={money(kpis.paid, kpis.currency)}
-        hint={`${money(kpis.outstanding, kpis.currency)} outstanding`}
+        hint={t("{value} outstanding", { value: money(kpis.outstanding, kpis.currency) })}
       />
     </StatGrid>
   );
@@ -122,11 +135,14 @@ function KpiRow() {
 /* ------------------------------------------------------------------ leave per month */
 
 function LeavePerMonthCard() {
+  const t = useT();
   const today = useToday();
   const requests = useAppStore((s) => s.requests);
   const holidays = useAppStore((s) => s.holidays);
   const year = today.slice(0, 4);
   const month = fromKey(today).getMonth();
+  // Month index → date key, so labels go through the language-aware helpers.
+  const monthKey = (i: number) => `${year}-${String(i + 1).padStart(2, "0")}-01`;
 
   const perMonth = useMemo(() => {
     const out = Array.from({ length: 12 }, () => 0);
@@ -147,8 +163,8 @@ function LeavePerMonthCard() {
   const series: Series[] = [{ id: "approved", label: "Approved days", color: SERIES.one }];
   const columns: Column[] = perMonth.map((v, i) => ({
     key: String(i),
-    label: MONTHS_SHORT[i],
-    title: `${MONTHS[i]} ${year}`,
+    label: monthShort(monthKey(i)),
+    title: `${monthName(monthKey(i))} ${year}`,
     values: [v],
     emphasis: i === month,
   }));
@@ -156,14 +172,20 @@ function LeavePerMonthCard() {
 
   return (
     <ChartCard
-      title="Leave taken per month"
-      description={`${plural(Math.round(total * 100) / 100, "approved day", "approved days")} in ${year}`}
+      title={t("Leave taken per month")}
+      description={t("{value} in {year}", {
+        value: t(
+          Math.round(total * 100) / 100 === 1 ? "{n} approved day" : "{n} approved days",
+          { n: Math.round(total * 100) / 100 },
+        ),
+        year,
+      })}
       chart={<ColumnChart columns={columns} series={series} format={fmtDays} formatTick={(v) => formatDays(v)} compactLabelEvery={2} />}
       table={
         <DataTable
-          head={["Month", "Approved days"]}
-          rows={perMonth.map((v, i) => [MONTHS[i], formatDays(Math.round(v * 100) / 100)])}
-          foot={["Total", formatDays(Math.round(total * 100) / 100)]}
+          head={[t("Month"), t("Approved days")]}
+          rows={perMonth.map((v, i) => [monthName(monthKey(i)), formatDays(Math.round(v * 100) / 100)])}
+          foot={[t("Total"), formatDays(Math.round(total * 100) / 100)]}
         />
       }
     />
@@ -173,6 +195,7 @@ function LeavePerMonthCard() {
 /* ------------------------------------------------------------------ hours */
 
 function HoursCard() {
+  const t = useT();
   const today = useToday();
   const timeEntries = useAppStore((s) => s.timeEntries);
   const weekStartsOn = useAppStore((s) => s.settings.weekStartsOn);
@@ -196,7 +219,7 @@ function HoursCard() {
         return {
           key: date,
           label: String(d.getDate()),
-          title: `${WEEKDAYS[d.getDay()]}, ${formatShort(date)}`,
+          title: `${formatWeekday(date)}, ${formatShort(date)}`,
           short: formatShort(date),
           values: sum(date, date),
           emphasis: date === today,
@@ -210,13 +233,13 @@ function HoursCard() {
       return {
         key: from,
         label: formatShort(from),
-        title: `Week of ${formatShort(from)}`,
+        title: t("Week of {date}", { date: formatShort(from) }),
         short: formatShort(from),
         values: sum(from, to),
         emphasis: from === current,
       };
     });
-  }, [timeEntries, today, weekStartsOn, mode]);
+  }, [timeEntries, today, weekStartsOn, mode, t]);
 
   const series: Series[] = [
     { id: "billable", label: "Billable", color: SERIES.one },
@@ -228,11 +251,15 @@ function HoursCard() {
 
   return (
     <ChartCard
-      title="Hours tracked"
-      description={`${fmtHours(billable + other)} in the last ${mode === "day" ? "14 days" : "12 weeks"} · ${fmtHours(billable)} billable`}
+      title={t("Hours tracked")}
+      description={t("{value} in the last {range} · {billable} billable", {
+        value: fmtHours(billable + other),
+        range: mode === "day" ? t("14 days") : t("12 weeks"),
+        billable: fmtHours(billable),
+      })}
       legend={series}
       actions={
-        <div className="flex items-center rounded-lg bg-app p-0.5 md:mr-1" role="group" aria-label="Group by">
+        <div className="flex items-center rounded-lg bg-app p-0.5 md:mr-1" role="group" aria-label={t("Group by")}>
           {(["day", "week"] as const).map((m) => (
             <button
               key={m}
@@ -244,7 +271,7 @@ function HoursCard() {
                 mode === m ? "bg-surface text-fg shadow-[0_1px_2px_rgba(0,0,0,0.06)]" : "text-fg-2 hover-fine:text-fg",
               )}
             >
-              {m === "day" ? "Daily" : "Weekly"}
+              {m === "day" ? t("Daily") : t("Weekly")}
             </button>
           ))}
         </div>
@@ -262,7 +289,7 @@ function HoursCard() {
       }
       table={
         <DataTable
-          head={[mode === "day" ? "Day" : "Week", "Billable", "Non-billable", "Total"]}
+          head={[mode === "day" ? t("Day") : t("Week"), t("Billable"), t("Non-billable"), t("Total")]}
           rows={buckets.map((b) => [
             // Short dates on phones keep all four columns in view.
             <>
@@ -273,7 +300,7 @@ function HoursCard() {
             fmtHours(b.values[1]),
             fmtHours(b.values[0] + b.values[1]),
           ])}
-          foot={["Total", fmtHours(billable), fmtHours(other), fmtHours(billable + other)]}
+          foot={[t("Total"), fmtHours(billable), fmtHours(other), fmtHours(billable + other)]}
         />
       }
     />
@@ -283,6 +310,7 @@ function HoursCard() {
 /* ------------------------------------------------------------------ leave by type */
 
 function LeaveByTypeCard() {
+  const t = useT();
   const today = useToday();
   const requests = useAppStore((s) => s.requests);
   const year = today.slice(0, 4);
@@ -307,8 +335,8 @@ function LeaveByTypeCard() {
 
   return (
     <ChartCard
-      title="Leave by type"
-      description={`Approved days in ${year}, by leave type`}
+      title={t("Leave by type")}
+      description={t("Approved days in {year}, by leave type", { year })}
       chart={
         <ul className="grid gap-1 pt-1">
           {rows.map((r) => {
@@ -319,10 +347,14 @@ function LeaveByTypeCard() {
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      aria-label={`${r.type}: ${plural(r.approved, "approved day", "approved days")}, ${plural(r.pending, "pending day", "pending days")}`}
+                      aria-label={t("{type}: {approved}, {pending}", {
+                        type: t(r.type),
+                        approved: t(r.approved === 1 ? "{n} approved day" : "{n} approved days", { n: formatDays(r.approved) }),
+                        pending: t(r.pending === 1 ? "{n} pending day" : "{n} pending days", { n: formatDays(r.pending) }),
+                      })}
                       className="group grid h-9 w-full grid-cols-[112px_minmax(0,1fr)] items-center gap-3 rounded-md px-1 text-left outline-none focus-visible:bg-hover"
                     >
-                      <span className="t-14 truncate text-fg-2">{r.type}</span>
+                      <span className="t-14 truncate text-fg-2">{t(r.type)}</span>
                       <span className="flex min-w-0 items-center gap-2">
                         {r.approved > 0 ? (
                           <span
@@ -337,10 +369,10 @@ function LeaveByTypeCard() {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="flex-col items-start gap-1.5 py-2">
-                    <span className="opacity-70">{r.type}</span>
-                    <TipRow color={SERIES.one} value={fmtDays(r.approved)} label="Approved" />
-                    <TipRow value={fmtDays(r.pending)} label="Pending" />
-                    <TipRow value={r.count} label={r.count === 1 ? "Request" : "Requests"} />
+                    <span className="opacity-70">{t(r.type)}</span>
+                    <TipRow color={SERIES.one} value={fmtDays(r.approved)} label={t("Approved")} />
+                    <TipRow value={fmtDays(r.pending)} label={t("Pending")} />
+                    <TipRow value={r.count} label={r.count === 1 ? t("Request") : t("Requests")} />
                   </TooltipContent>
                 </Tooltip>
               </li>
@@ -350,9 +382,9 @@ function LeaveByTypeCard() {
       }
       table={
         <DataTable
-          head={["Type", "Requests", "Approved", "Pending"]}
-          rows={rows.map((r) => [r.type, r.count, fmtDays(r.approved), fmtDays(r.pending)])}
-          foot={["Total", rows.reduce((a, r) => a + r.count, 0), fmtDays(total), fmtDays(rows.reduce((a, r) => a + r.pending, 0))]}
+          head={[t("Type"), t("Requests"), t("Approved"), t("Pending")]}
+          rows={rows.map((r) => [t(r.type), r.count, fmtDays(r.approved), fmtDays(r.pending)])}
+          foot={[t("Total"), rows.reduce((a, r) => a + r.count, 0), fmtDays(total), fmtDays(rows.reduce((a, r) => a + r.pending, 0))]}
         />
       }
     />
@@ -370,6 +402,7 @@ const INVOICE_STATUS: Record<InvoiceStatus, { label: string; tone: string; icon:
 const STATUS_ORDER: InvoiceStatus[] = ["paid", "sent", "overdue", "draft"];
 
 function InvoicesCard() {
+  const t = useT();
   const invoices = useAppStore((s) => s.invoices);
   const currency = invoices[0]?.currency ?? "USD";
 
@@ -386,18 +419,21 @@ function InvoicesCard() {
 
   return (
     <ChartCard
-      title="Invoice revenue by status"
-      description={`${money(total, currency)} invoiced across ${plural(invoices.length, "invoice", "invoices")}`}
+      title={t("Invoice revenue by status")}
+      description={t("{value} invoiced across {count}", {
+        value: money(total, currency),
+        count: t(invoices.length === 1 ? "{n} invoice" : "{n} invoices", { n: invoices.length }),
+      })}
       actions={
         <Button variant="ghost" size="sm" asChild className="max-md:h-9 md:mr-1">
           <Link href="/invoice">
-            Invoices <ArrowRightIcon />
+            {t("Invoices")} <ArrowRightIcon />
           </Link>
         </Button>
       }
       chart={
         <div className="grid min-w-0 gap-5 pt-1">
-          <div className="flex h-3 gap-[2px]" role="img" aria-label="Share of invoiced revenue by status">
+          <div className="flex h-3 gap-[2px]" role="img" aria-label={t("Share of invoiced revenue by status")}>
             {visible.length === 0 ? <span className="h-full flex-1 rounded-[4px] bg-hairline" /> : null}
             {visible.map((r, i) => (
               <Tooltip key={r.status}>
@@ -413,11 +449,11 @@ function InvoicesCard() {
                   />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="flex-col items-start gap-1.5 py-2">
-                  <span className="opacity-70">{INVOICE_STATUS[r.status].label}</span>
+                  <span className="opacity-70">{t(INVOICE_STATUS[r.status].label)}</span>
                   <TipRow
                     color={`var(--status-${INVOICE_STATUS[r.status].tone})`}
                     value={money(r.amount, currency)}
-                    label={`${Math.round((r.amount / total) * 100)}% of total`}
+                    label={t("{pct}% of total", { pct: Math.round((r.amount / total) * 100) })}
                   />
                 </TooltipContent>
               </Tooltip>
@@ -442,9 +478,9 @@ function InvoicesCard() {
                       }}
                     >
                       {s.icon}
-                      <span className="salt text-[12px] leading-none tracking-[-0.24px] whitespace-nowrap">{s.label}</span>
+                      <span className="salt text-[12px] leading-none tracking-[-0.24px] whitespace-nowrap">{t(s.label)}</span>
                     </span>
-                    <span className="t-12 text-fg-2 md:flex-1">{plural(r.count, "invoice", "invoices")}</span>
+                    <span className="t-12 text-fg-2 md:flex-1">{t(r.count === 1 ? "{n} invoice" : "{n} invoices", { n: r.count })}</span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-1.5 md:flex-row md:items-center md:gap-3">
                     <span className="t-12 text-right text-placeholder tabular-nums max-md:order-last md:w-10">
@@ -460,14 +496,14 @@ function InvoicesCard() {
       }
       table={
         <DataTable
-          head={["Status", "Invoices", "Amount", "Share"]}
+          head={[t("Status"), t("Invoices"), t("Amount"), t("Share")]}
           rows={rows.map((r) => [
-            INVOICE_STATUS[r.status].label,
+            t(INVOICE_STATUS[r.status].label),
             r.count,
             money(r.amount, currency),
             total ? `${Math.round((r.amount / total) * 100)}%` : "—",
           ])}
-          foot={["Total", invoices.length, money(total, currency), total ? "100%" : "—"]}
+          foot={[t("Total"), invoices.length, money(total, currency), total ? "100%" : "—"]}
         />
       }
     />

@@ -7,9 +7,10 @@ import { Field } from "@/components/dialogs/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { fromKey, MONTHS } from "@/lib/dates";
+import { formatMonthDay, fromKey, monthShort } from "@/lib/dates";
 import type { Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { Card, CardHeader, PageHeader, PageRoot } from "@/components/pages/shared/page-chrome";
@@ -20,6 +21,8 @@ const TOUCH_FIELD = "max-md:h-10 max-md:text-[16px]";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BIO_MAX = 280;
 
+type TFn = ReturnType<typeof useT>;
+
 function initialsFrom(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "";
@@ -28,7 +31,7 @@ function initialsFrom(name: string) {
   return (first + last).toUpperCase();
 }
 
-function tenure(start: string, today: string) {
+function tenure(start: string, today: string, t: TFn) {
   if (!start || start > today) return null;
   const a = fromKey(start);
   const b = fromKey(today);
@@ -36,24 +39,25 @@ function tenure(start: string, today: string) {
   if (b.getDate() < a.getDate()) months -= 1;
   const y = Math.floor(months / 12);
   const m = months % 12;
-  if (!y && !m) return "Less than a month";
-  return [y ? `${y} ${y === 1 ? "year" : "years"}` : "", m ? `${m} ${m === 1 ? "month" : "months"}` : ""]
+  if (!y && !m) return t("Less than a month");
+  return [y ? t(y === 1 ? "{n} year" : "{n} years", { n: y }) : "", m ? t(m === 1 ? "{n} month" : "{n} months", { n: m }) : ""]
     .filter(Boolean)
     .join(" ");
 }
 
-function validate(p: Profile): Partial<Record<keyof Profile, string>> {
+function validate(p: Profile, t: TFn): Partial<Record<keyof Profile, string>> {
   const errors: Partial<Record<keyof Profile, string>> = {};
-  if (!p.name.trim()) errors.name = "Your name is required.";
-  if (!p.email.trim()) errors.email = "An email address is required.";
-  else if (!EMAIL_RE.test(p.email.trim())) errors.email = "Enter a valid email address.";
-  if (!p.initials.trim()) errors.initials = "Add 1–3 initials.";
-  if (p.bio.length > BIO_MAX) errors.bio = `Keep it under ${BIO_MAX} characters.`;
-  if (p.startDate && p.birthday && p.birthday >= p.startDate) errors.birthday = "Birthday must be before your start date.";
+  if (!p.name.trim()) errors.name = t("Your name is required.");
+  if (!p.email.trim()) errors.email = t("An email address is required.");
+  else if (!EMAIL_RE.test(p.email.trim())) errors.email = t("Enter a valid email address.");
+  if (!p.initials.trim()) errors.initials = t("Add 1–3 initials.");
+  if (p.bio.length > BIO_MAX) errors.bio = t("Keep it under {n} characters.", { n: BIO_MAX });
+  if (p.startDate && p.birthday && p.birthday >= p.startDate) errors.birthday = t("Birthday must be before your start date.");
   return errors;
 }
 
 export function PersonalDetailsPage() {
+  const t = useT();
   const today = useToday();
   const profile = useAppStore((s) => s.profile);
   const updateProfile = useAppStore((s) => s.updateProfile);
@@ -69,7 +73,7 @@ export function PersonalDetailsPage() {
     [edits, profile],
   );
   const dirty = changed.length > 0;
-  const errors = useMemo(() => validate(draft), [draft]);
+  const errors = useMemo(() => validate(draft, t), [draft, t]);
   const hasErrors = Object.keys(errors).length > 0;
 
   const set = <K extends keyof Profile>(key: K, value: Profile[K]) =>
@@ -88,7 +92,7 @@ export function PersonalDetailsPage() {
     if (!dirty) return;
     if (hasErrors) {
       setShowErrors(true);
-      toast.error("Check the highlighted fields", { description: "Some details need fixing before saving." });
+      toast.error(t("Check the highlighted fields"), { description: t("Some details need fixing before saving.") });
       return;
     }
     const patch: Partial<Profile> = {};
@@ -97,8 +101,8 @@ export function PersonalDetailsPage() {
     updateProfile(patch);
     setEdits({});
     setShowErrors(false);
-    toast.success("Profile saved", {
-      description: `${changed.length} ${changed.length === 1 ? "field" : "fields"} updated`,
+    toast.success(t("Profile saved"), {
+      description: t(changed.length === 1 ? "{n} field updated" : "{n} fields updated", { n: changed.length }),
     });
   };
 
@@ -134,31 +138,31 @@ export function PersonalDetailsPage() {
     />
   );
 
-  const t = tenure(draft.startDate, today);
+  const tenureText = tenure(draft.startDate, today, t);
   const birthday = draft.birthday ? fromKey(draft.birthday) : null;
 
   return (
     <PageRoot>
       <PageHeader
-        title="Your profile"
+        title={t("Your profile")}
         description={
           dirty ? (
             <>
-              {changed.length} unsaved {changed.length === 1 ? "change" : "changes"}
-              <span className="max-md:hidden"> · ⌘S to save</span>
+              {t(changed.length === 1 ? "{n} unsaved change" : "{n} unsaved changes", { n: changed.length })}
+              <span className="max-md:hidden"> · {t("⌘S to save")}</span>
             </>
           ) : (
-            "Shared with your manager and People Ops"
+            t("Shared with your manager and People Ops")
           )
         }
         actions={
           // Phones get a sticky save bar at the bottom instead (see below).
           <div className="hidden items-center gap-2 md:flex">
             <Button onClick={reset} disabled={!dirty}>
-              <RotateCcwIcon className="text-icon" /> Reset
+              <RotateCcwIcon className="text-icon" /> {t("Reset")}
             </Button>
             <Button id="profile-save" type="submit" form="profile-form" variant="brand" disabled={!dirty}>
-              Save changes
+              {t("Save changes")}
             </Button>
           </div>
         }
@@ -182,9 +186,9 @@ export function PersonalDetailsPage() {
               </span>
             </span>
             <div className="grid min-w-0 gap-2">
-              <p className="t-16 text-fg">{draft.name || "Your name"}</p>
+              <p className="t-16 text-fg">{draft.name || t("Your name")}</p>
               <p className="t-14 text-fg-2">
-                {[draft.jobTitle, draft.department].filter(Boolean).join(" · ") || "Add a job title"}
+                {[draft.jobTitle, draft.department].filter(Boolean).join(" · ") || t("Add a job title")}
               </p>
             </div>
           </div>
@@ -193,22 +197,24 @@ export function PersonalDetailsPage() {
             <SummaryRow icon={<PhoneIcon />}>{draft.phone || "—"}</SummaryRow>
             <SummaryRow icon={<MapPinIcon />}>{draft.location || "—"}</SummaryRow>
             <SummaryRow icon={<BriefcaseIcon />}>
-              {draft.startDate ? `Joined ${MONTHS[fromKey(draft.startDate).getMonth()].slice(0, 3)} ${draft.startDate.slice(0, 4)}` : "—"}
-              {t ? <span className="text-placeholder"> · {t}</span> : null}
+              {draft.startDate
+                ? t("Joined {month} {year}", { month: monthShort(draft.startDate), year: draft.startDate.slice(0, 4) })
+                : "—"}
+              {tenureText ? <span className="text-placeholder"> · {tenureText}</span> : null}
             </SummaryRow>
             <SummaryRow icon={<CakeIcon />}>
-              {birthday ? `${MONTHS[birthday.getMonth()]} ${birthday.getDate()}` : "—"}
+              {birthday ? formatMonthDay(draft.birthday) : "—"}
             </SummaryRow>
           </ul>
         </Card>
 
         <div className="grid min-w-0 gap-4">
-          <Section title="Basic information" description="How you appear across the workspace">
+          <Section title={t("Basic information")} description={t("How you appear across the workspace")}>
             <div className="grid grid-cols-[minmax(0,1fr)_88px] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_120px] sm:gap-4">
-              <Field label="Full name" htmlFor="pd-name" error={err("name")}>
+              <Field label={t("Full name")} htmlFor="pd-name" error={err("name")}>
                 {input("name", { autoComplete: "name", required: true })}
               </Field>
-              <Field label="Initials" htmlFor="pd-initials" error={err("initials")}>
+              <Field label={t("Initials")} htmlFor="pd-initials" error={err("initials")}>
                 {input("initials", {
                   maxLength: 3,
                   className: "uppercase",
@@ -222,56 +228,60 @@ export function PersonalDetailsPage() {
                 onClick={() => set("initials", initialsFrom(draft.name))}
                 className="t-12 -mt-2 w-fit text-brand outline-none hover-fine:text-brand-strong focus-visible:underline max-md:-my-1 max-md:py-1.5"
               >
-                Use “{initialsFrom(draft.name)}” from your name
+                {t("Use “{initials}” from your name", { initials: initialsFrom(draft.name) })}
               </button>
             ) : null}
             <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-              <Field label="Email" htmlFor="pd-email" error={err("email")}>
+              <Field label={t("Email")} htmlFor="pd-email" error={err("email")}>
                 {input("email", { type: "email", autoComplete: "email", required: true })}
               </Field>
-              <Field label="Phone" htmlFor="pd-phone">
+              <Field label={t("Phone")} htmlFor="pd-phone">
                 {input("phone", { type: "tel", autoComplete: "tel", placeholder: "+44 20 0000 0000" })}
               </Field>
             </div>
           </Section>
 
-          <Section title="Work" description="Your role and reporting line">
+          <Section title={t("Work")} description={t("Your role and reporting line")}>
             <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-              <Field label="Job title" htmlFor="pd-jobTitle">
+              <Field label={t("Job title")} htmlFor="pd-jobTitle">
                 {input("jobTitle", { autoComplete: "organization-title" })}
               </Field>
-              <Field label="Department" htmlFor="pd-department">
+              <Field label={t("Department")} htmlFor="pd-department">
                 {input("department")}
               </Field>
-              <Field label="Manager" htmlFor="pd-manager">
+              <Field label={t("Manager")} htmlFor="pd-manager">
                 {input("manager")}
               </Field>
-              <Field label="Location" htmlFor="pd-location">
-                {input("location", { placeholder: "City, Country" })}
+              <Field label={t("Location")} htmlFor="pd-location">
+                {input("location", { placeholder: t("City, Country") })}
               </Field>
-              <Field label="Start date" htmlFor="pd-startDate" hint={t ? `${t} at the company` : undefined}>
+              <Field
+                label={t("Start date")}
+                htmlFor="pd-startDate"
+                hint={tenureText ? t("{tenure} at the company", { tenure: tenureText }) : undefined}
+              >
                 {input("startDate", { type: "date", max: today })}
               </Field>
             </div>
           </Section>
 
-          <Section title="Personal" description="Only visible to People Ops">
+          <Section title={t("Personal")} description={t("Only visible to People Ops")}>
             <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-              <Field label="Birthday" htmlFor="pd-birthday" error={err("birthday")}>
+              <Field label={t("Birthday")} htmlFor="pd-birthday" error={err("birthday")}>
                 {input("birthday", { type: "date", max: today })}
               </Field>
-              <Field label="Emergency contact" htmlFor="pd-emergencyContact" hint="Name and phone number">
-                {input("emergencyContact", { placeholder: "Name · phone" })}
+              <Field label={t("Emergency contact")} htmlFor="pd-emergencyContact" hint={t("Name and phone number")}>
+                {input("emergencyContact", { placeholder: t("Name · phone") })}
               </Field>
-              <Field label="Home address" htmlFor="pd-address" className="sm:col-span-2">
+              <Field label={t("Home address")} htmlFor="pd-address" className="sm:col-span-2">
                 {input("address", { autoComplete: "street-address" })}
               </Field>
             </div>
           </Section>
 
-          <Section title="About" description="A short intro for your teammates">
+          <Section title={t("About")} description={t("A short intro for your teammates")}>
             <Field
-              label="Bio"
+              label={t("Bio")}
               htmlFor="pd-bio"
               error={err("bio")}
               hint={
@@ -286,7 +296,7 @@ export function PersonalDetailsPage() {
                 rows={3}
                 value={draft.bio}
                 onChange={(e) => set("bio", e.target.value)}
-                placeholder="What you work on, what you love…"
+                placeholder={t("What you work on, what you love…")}
                 aria-invalid={err("bio") ? true : undefined}
               />
             </Field>
@@ -298,10 +308,10 @@ export function PersonalDetailsPage() {
       {dirty ? (
         <div className="sticky bottom-0 z-10 mt-auto flex gap-2 border-t border-hairline bg-surface px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] duration-200 ease-(--ease-out) animate-in fade-in-0 slide-in-from-bottom-4 md:hidden">
           <Button className="h-10 px-3.5" onClick={reset}>
-            <RotateCcwIcon className="text-icon" /> Reset
+            <RotateCcwIcon className="text-icon" /> {t("Reset")}
           </Button>
           <Button type="submit" form="profile-form" variant="brand" className="h-10 flex-1">
-            Save {changed.length === 1 ? "change" : `${changed.length} changes`}
+            {changed.length === 1 ? t("Save change") : t("Save {n} changes", { n: changed.length })}
           </Button>
         </div>
       ) : null}

@@ -33,9 +33,11 @@ describe("dates", () => {
   });
 
   it("formats ranges within and across months", () => {
-    expect(formatRange("2026-11-08", "2026-11-14")).toBe("Nov 8 – 14");
-    expect(formatRange("2026-10-25", "2026-10-31")).toBe("Oct 25 – 31");
-    expect(formatRange("2026-11-29", "2026-12-05")).toBe("Nov 29 – Dec 5");
+    expect(formatRange("2026-11-08", "2026-11-14", "en")).toBe("Nov 8 – 14");
+    expect(formatRange("2026-10-25", "2026-10-31", "en")).toBe("Oct 25 – 31");
+    expect(formatRange("2026-11-29", "2026-12-05", "en")).toBe("Nov 29 – Dec 5");
+    expect(formatRange("2026-11-08", "2026-11-14", "zh")).toBe("11月8日 – 14日");
+    expect(formatRange("2026-11-29", "2026-12-05", "zh")).toBe("11月29日 – 12月5日");
   });
 
   it("adds days and months without drifting", () => {
@@ -51,9 +53,10 @@ describe("dates", () => {
   });
 
   it("formats and parses times in 24h and 12h", () => {
-    expect(formatTime(7 * 60)).toBe("07:00");
-    expect(formatTime(13 * 60 + 30, "12h")).toBe("1:30 PM");
-    expect(formatTime(0, "12h")).toBe("12:00 AM");
+    expect(formatTime(7 * 60, "24h", "en")).toBe("07:00");
+    expect(formatTime(13 * 60 + 30, "12h", "en")).toBe("1:30 PM");
+    expect(formatTime(0, "12h", "en")).toBe("12:00 AM");
+    expect(formatTime(13 * 60 + 30, "12h", "zh")).toBe("下午 1:30");
     expect(parseTime("09:45")).toBe(585);
   });
 });

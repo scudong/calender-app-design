@@ -19,6 +19,7 @@ import { EVENT_COLORS } from "@/components/calendar/event-colors";
 import { parseTime, timeInputValue } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { CalEvent, EventColor } from "@/lib/types";
+import { useT } from "@/hooks/use-i18n";
 import { useAppStore } from "@/stores/app-store";
 import { Field } from "./field";
 
@@ -57,6 +58,7 @@ function EventForm({
   const saveEvent = useAppStore((s) => s.saveEvent);
   const deleteEvent = useAppStore((s) => s.deleteEvent);
   const duplicateEvent = useAppStore((s) => s.duplicateEvent);
+  const t = useT();
 
   const [draft, setDraft] = useState<Draft>(() =>
     existing
@@ -74,7 +76,7 @@ function EventForm({
   );
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }));
 
-  const error = !draft.allDay && draft.end <= draft.start ? "End time must be after the start time." : null;
+  const error = !draft.allDay && draft.end <= draft.start ? t("End time must be after the start time.") : null;
   const linked = Boolean(existing?.requestId);
 
   return (
@@ -94,29 +96,29 @@ function EventForm({
       }}
     >
       <DialogHeader className="gap-1.5">
-        <DialogTitle className="t-16">{existing ? "Edit event" : "New event"}</DialogTitle>
+        <DialogTitle className="t-16">{t(existing ? "Edit event" : "New event")}</DialogTitle>
         <DialogDescription className="t-14">
-          {linked ? "This event belongs to a leave request." : "Add it to your calendar — only you can see it."}
+          {t(linked ? "This event belongs to a leave request." : "Add it to your calendar — only you can see it.")}
         </DialogDescription>
       </DialogHeader>
 
       <div className="grid gap-4">
-        <Field label="Title" htmlFor="ev-title">
+        <Field label={t("Title")} htmlFor="ev-title">
           <Input
             id="ev-title"
             autoFocus
             required
-            placeholder="e.g. Dentist appointment"
+            placeholder={t("e.g. Dentist appointment")}
             value={draft.title}
             onChange={(e) => set("title", e.target.value)}
           />
         </Field>
 
         <div className="grid grid-cols-[1.4fr_1fr_1fr] items-end gap-3 max-sm:grid-cols-2 max-sm:[&>*:first-child]:col-span-2">
-          <Field label="Date" htmlFor="ev-date">
+          <Field label={t("Date")} htmlFor="ev-date">
             <Input id="ev-date" type="date" required value={draft.date} onChange={(e) => set("date", e.target.value)} />
           </Field>
-          <Field label="Start" htmlFor="ev-start">
+          <Field label={t("Start")} htmlFor="ev-start">
             <Input
               id="ev-start"
               type="time"
@@ -130,7 +132,7 @@ function EventForm({
               }}
             />
           </Field>
-          <Field label="End" htmlFor="ev-end">
+          <Field label={t("End")} htmlFor="ev-end">
             <Input
               id="ev-end"
               type="time"
@@ -150,25 +152,25 @@ function EventForm({
         <div className="flex items-center justify-between gap-3">
           <label className="flex cursor-pointer items-center gap-2.5">
             <Switch checked={draft.allDay} onCheckedChange={(v) => set("allDay", v)} />
-            <span className="t-14 text-fg">All day</span>
+            <span className="t-14 text-fg">{t("All day")}</span>
           </label>
-          <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Color">
+          <div className="flex items-center gap-1.5" role="radiogroup" aria-label={t("Color")}>
             {EVENT_COLORS.map((c) => (
               <ColorSwatch key={c} color={c} selected={draft.color === c} onSelect={() => set("color", c)} />
             ))}
           </div>
         </div>
 
-        <Field label="Location" htmlFor="ev-location">
+        <Field label={t("Location")} htmlFor="ev-location">
           <Input
             id="ev-location"
-            placeholder="Add a place or a link"
+            placeholder={t("Add a place or a link")}
             value={draft.location ?? ""}
             onChange={(e) => set("location", e.target.value)}
           />
         </Field>
 
-        <Field label="Notes" htmlFor="ev-note" hint="Short notes show on the event in the calendar.">
+        <Field label={t("Notes")} htmlFor="ev-note" hint={t("Short notes show on the event in the calendar.")}>
           <Textarea id="ev-note" rows={2} value={draft.note ?? ""} onChange={(e) => set("note", e.target.value)} />
         </Field>
       </div>
@@ -183,7 +185,7 @@ function EventForm({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    aria-label="Delete event"
+                    aria-label={t("Delete event")}
                     onClick={() => {
                       deleteEvent(existing.id);
                       onDone();
@@ -192,7 +194,7 @@ function EventForm({
                     <Trash2Icon className="text-danger" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Delete</TooltipContent>
+                <TooltipContent>{t("Delete")}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -200,7 +202,7 @@ function EventForm({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    aria-label="Duplicate event"
+                    aria-label={t("Duplicate event")}
                     onClick={() => {
                       duplicateEvent(existing.id);
                       onDone();
@@ -209,17 +211,17 @@ function EventForm({
                     <CopyIcon />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Duplicate</TooltipContent>
+                <TooltipContent>{t("Duplicate")}</TooltipContent>
               </Tooltip>
             </>
           )}
         </div>
         <div className="flex gap-2">
           <Button type="button" onClick={onDone}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button type="submit" variant="brand" disabled={!!error || !draft.title.trim()}>
-            {existing ? "Save" : "Create event"}
+            {t(existing ? "Save" : "Create event")}
           </Button>
         </div>
       </DialogFooter>
@@ -228,12 +230,13 @@ function EventForm({
 }
 
 function ColorSwatch({ color, selected, onSelect }: { color: EventColor; selected: boolean; onSelect: () => void }) {
+  const t = useT();
   return (
     <button
       type="button"
       role="radio"
       aria-checked={selected}
-      aria-label={color}
+      aria-label={t(color)}
       onClick={onSelect}
       className={cn(
         "press size-5 rounded-full outline-none ring-offset-2 ring-offset-surface focus-visible:ring-2 focus-visible:ring-brand/50",

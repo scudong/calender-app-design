@@ -1,14 +1,15 @@
 import { isWeekend, rangeKeys } from "./dates";
+import { getActiveLang, type Lang } from "./i18n";
 import type { AppState, EventColor, Holiday, LeaveType } from "./types";
 
-export const LEAVE_TYPES: LeaveType[] = ["Time off", "Sick", "Extra leave", "Half-day leave", "Personal"];
+export const LEAVE_TYPES: LeaveType[] = ["Time off", "Sick", "Extra leave", "Half-day leave", "Personal leave"];
 
 export const LEAVE_COLORS: Record<LeaveType, EventColor> = {
   "Time off": "green",
   Sick: "blue",
   "Extra leave": "pink",
   "Half-day leave": "green",
-  Personal: "orange",
+  "Personal leave": "orange",
 };
 
 export const WORKDAY_MINUTES = 8 * 60;
@@ -19,7 +20,13 @@ export function workingDays(from: string, to: string, holidays: Holiday[]): stri
   return rangeKeys(from, to).filter((d) => !isWeekend(d) && !off.has(d));
 }
 
-export function durationLabel(days: number, hours: number): string {
+export function durationLabel(days: number, hours: number, lang: Lang = getActiveLang()): string {
+  if (lang === "zh") {
+    const zh: string[] = [];
+    if (days) zh.push(`${formatDays(days)}天`);
+    if (hours) zh.push(`${formatDays(hours)}小时`);
+    return zh.join("") || "0小时";
+  }
   const parts: string[] = [];
   if (days) parts.push(`${days} ${days === 1 ? "day" : "days"}`);
   if (hours) parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);

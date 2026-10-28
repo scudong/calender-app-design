@@ -25,15 +25,15 @@ import {
   formatTimeRange,
   formatWeekday,
   fromKey,
-  MONTHS_SHORT,
+  monthShort,
   relativeTime,
-  WEEKDAYS,
-  WEEKDAYS_SHORT,
+  weekdayShort,
   weekDays,
 } from "@/lib/dates";
-import { computeLeaveStats, formatDays, plural } from "@/lib/leave";
+import { computeLeaveStats, formatDays } from "@/lib/leave";
 import type { CalEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useNow, useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { openOverlay } from "@/stores/overlay-store";
@@ -57,26 +57,31 @@ function dayLabel(today: string, date: string) {
 }
 
 export function DashboardPage() {
+  const t = useT();
   const today = useToday();
   const now = useNow();
   const profile = useAppStore((s) => s.profile);
-  const firstName = profile.name.trim().split(/\s+/)[0] || "there";
+  const firstName = profile.name.trim().split(/\s+/)[0] || t("there");
   const d = fromKey(today);
 
   return (
     <PageRoot>
       <PageHeader
-        title={`${greetingFor(now)}, ${firstName}`}
-        description={`${WEEKDAYS[d.getDay()]}, ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()} · Here’s what’s coming up`}
+        title={`${t(greetingFor(now))}, ${firstName}`}
+        description={t("{weekday}, {month} {day} · Here’s what’s coming up", {
+          weekday: formatWeekday(today),
+          month: monthShort(today),
+          day: d.getDate(),
+        })}
         actions={
           <>
             <Button onClick={() => openOverlay({ kind: "event", date: today })}>
-              <PlusIcon className="text-icon" /> New event
+              <PlusIcon className="text-icon" /> {t("New event")}
             </Button>
             {/* Phones reach the calendar from the nav and the Upcoming card. */}
             <Button asChild className="max-md:hidden">
               <Link href="/time-off">
-                <Icon name="nav-calendar" /> Open calendar
+                <Icon name="nav-calendar" /> {t("Open calendar")}
               </Link>
             </Button>
           </>
@@ -103,6 +108,7 @@ export function DashboardPage() {
 /* ------------------------------------------------------------------ stats */
 
 function StatRow() {
+  const t = useT();
   const today = useToday();
   const requests = useAppStore((s) => s.requests);
   const settings = useAppStore((s) => s.settings);
@@ -137,37 +143,48 @@ function StatRow() {
     <StatGrid>
       <StatTile
         icon="available"
-        label="Available days"
+        label={t("Available days")}
         value={formatDays(stats.available)}
-        hint={`of ${plural(total, "day", "days")} this year`}
+        hint={t("of {value} this year", { value: t(total === 1 ? "{n} day" : "{n} days", { n: total }) })}
         href="/time-off"
       />
       <StatTile
         icon="pending"
-        label="Pending requests"
+        label={t("Pending requests")}
         value={pending.length}
-        hint={pending.length ? `${plural(pendingDays, "day", "days")} awaiting approval` : "Nothing waiting on approval"}
+        hint={
+          pending.length
+            ? t("{value} awaiting approval", { value: t(pendingDays === 1 ? "{n} day" : "{n} days", { n: pendingDays }) })
+            : t("Nothing waiting on approval")
+        }
         href="/time-off"
       />
       <StatTile
         icon="per-year"
-        label="Tracked this week"
+        label={t("Tracked this week")}
         value={formatDuration(week.total)}
         hint={
           week.total
-            ? `${Math.round((week.billable / week.total) * 100)}% billable · ${formatDuration(week.billable)}`
-            : "No time logged yet"
+            ? t("{pct}% billable · {value}", {
+                pct: Math.round((week.billable / week.total) * 100),
+                value: formatDuration(week.billable),
+              })
+            : t("No time logged yet")
         }
         href="/time-tracking"
       />
       <StatTile
         icon="upcoming"
-        label="Next time off"
+        label={t("Next time off")}
         value={nextLeave ? formatShort(nextLeave.from) : "—"}
         hint={
           nextLeave
-            ? `${inDays <= 0 ? "In progress" : inDays === 1 ? "Tomorrow" : `In ${inDays} days`} · ${nextLeave.type}${nextLeave.status === "pending" ? " (pending)" : ""}`
-            : "Nothing booked yet"
+            ? t("{when} · {type}{pending}", {
+                when: inDays <= 0 ? t("In progress") : inDays === 1 ? t("Tomorrow") : t("In {n} days", { n: inDays }),
+                type: t(nextLeave.type),
+                pending: nextLeave.status === "pending" ? ` ${t("(pending)")}` : "",
+              })
+            : t("Nothing booked yet")
         }
         href="/time-off"
       />
@@ -178,6 +195,7 @@ function StatRow() {
 /* ------------------------------------------------------------------ upcoming */
 
 function UpcomingCard() {
+  const t = useT();
   const today = useToday();
   const now = useNow();
   const events = useAppStore((s) => s.events);
@@ -201,12 +219,12 @@ function UpcomingCard() {
   return (
     <Card>
       <CardHeader
-        title="Upcoming"
-        description="Your next events and time off"
+        title={t("Upcoming")}
+        description={t("Your next events and time off")}
         actions={
           <Button variant="ghost" size="sm" asChild className="max-md:h-9">
             <Link href="/time-off">
-              View calendar <ArrowRightIcon />
+              {t("View calendar")} <ArrowRightIcon />
             </Link>
           </Button>
         }
@@ -214,11 +232,11 @@ function UpcomingCard() {
       {upcoming.length === 0 ? (
         <EmptyState
           icon={<CalendarX2Icon />}
-          title="Your calendar is clear"
-          hint="Nothing scheduled from today onward."
+          title={t("Your calendar is clear")}
+          hint={t("Nothing scheduled from today onward.")}
           action={
             <Button onClick={() => openOverlay({ kind: "event", date: today })}>
-              <PlusIcon className="text-icon" /> New event
+              <PlusIcon className="text-icon" /> {t("New event")}
             </Button>
           }
         />
@@ -237,13 +255,16 @@ function UpcomingCard() {
                     className="flex w-10 shrink-0 flex-col items-center gap-1 rounded-md py-1.5"
                     style={eventStyle(e.color)}
                   >
-                    <span className="text-[10px] leading-none tracking-wide uppercase">{MONTHS_SHORT[dd.getMonth()]}</span>
+                    <span className="text-[10px] leading-none tracking-wide uppercase">{monthShort(e.date)}</span>
                     <span className="t-14">{dd.getDate()}</span>
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <span className="t-14 truncate text-fg">{e.title}</span>
                     <span className="t-12 truncate text-fg-2">
-                      {dayLabel(today, e.date)} · {e.allDay ? "All day" : formatTimeRange(e.start, e.end, timeFormat)}
+                      {t("{day} · {time}", {
+                        day: t(dayLabel(today, e.date)),
+                        time: e.allDay ? t("All day") : formatTimeRange(e.start, e.end, timeFormat),
+                      })}
                       {e.location ? ` · ${e.location}` : ""}
                     </span>
                   </span>
@@ -263,6 +284,7 @@ function UpcomingCard() {
 /* ------------------------------------------------------------------ hours */
 
 function WeekHoursCard() {
+  const t = useT();
   const today = useToday();
   const timeEntries = useAppStore((s) => s.timeEntries);
   const weekStartsOn = useAppStore((s) => s.settings.weekStartsOn);
@@ -284,12 +306,12 @@ function WeekHoursCard() {
   return (
     <Card>
       <CardHeader
-        title="Hours this week"
-        description={total ? `${formatDuration(total)} tracked` : "No time tracked yet this week"}
+        title={t("Hours this week")}
+        description={total ? t("{value} tracked", { value: formatDuration(total) }) : t("No time tracked yet this week")}
         actions={
           <Button variant="ghost" size="sm" asChild className="max-md:h-9">
             <Link href="/time-tracking">
-              <TimerIcon /> Time tracking
+              <TimerIcon /> {t("Time tracking")}
             </Link>
           </Button>
         }
@@ -314,7 +336,10 @@ function WeekHoursCard() {
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      aria-label={`${formatWeekday(d.date)}: ${d.minutes ? formatDuration(d.minutes) : "no time"} tracked`}
+                      aria-label={t("{day}: {value} tracked", {
+                        day: formatWeekday(d.date),
+                        value: d.minutes ? formatDuration(d.minutes) : t("no time"),
+                      })}
                       className="group flex h-full flex-col items-center justify-end gap-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
                     >
                       {/* Touch has no hover tooltip: label the bars directly on phones. */}
@@ -336,7 +361,7 @@ function WeekHoursCard() {
                     <span className="font-medium">{d.minutes ? formatDuration(d.minutes) : "0h"}</span>
                     <span className="opacity-70">
                       {formatWeekday(d.date)}, {formatShort(d.date)}
-                      {d.minutes ? ` · ${formatDuration(d.billable)} billable` : ""}
+                      {d.minutes ? ` · ${t("{value} billable", { value: formatDuration(d.billable) })}` : ""}
                     </span>
                   </TooltipContent>
                 </Tooltip>
@@ -350,7 +375,7 @@ function WeekHoursCard() {
               key={d.date}
               className={cn("t-12-tight salt text-center", d.date === today ? "text-brand" : "text-placeholder")}
             >
-              {WEEKDAYS_SHORT[fromKey(d.date).getDay()]}
+              {weekdayShort(d.date)}
             </span>
           ))}
         </div>
@@ -362,6 +387,7 @@ function WeekHoursCard() {
 /* ------------------------------------------------------------------ balance */
 
 function BalanceCard() {
+  const t = useT();
   const today = useToday();
   const requests = useAppStore((s) => s.requests);
   const settings = useAppStore((s) => s.settings);
@@ -382,23 +408,30 @@ function BalanceCard() {
   return (
     <Card>
       <CardHeader
-        title="Leave balance"
-        description={`${stats.contract} contract + ${stats.carryover} carryover days`}
+        title={t("Leave balance")}
+        description={t("{contract} contract + {carryover} carryover days", {
+          contract: stats.contract,
+          carryover: stats.carryover,
+        })}
         actions={
           <Button variant="ghost" size="sm" className="max-md:h-9" onClick={() => openOverlay({ kind: "policy" })}>
-            Policy
+            {t("Policy")}
           </Button>
         }
       />
       <div className="grid gap-4 p-4">
         <div className="flex items-baseline gap-1.5">
           <span className="text-[28px] leading-none font-medium tracking-[-0.84px] text-fg">{formatDays(stats.available)}</span>
-          <span className="t-14 text-fg-2">of {formatDays(total)} days left</span>
+          <span className="t-14 text-fg-2">{t("of {value} days left", { value: formatDays(total) })}</span>
         </div>
         <div
           className="flex h-2 gap-0.5 overflow-hidden rounded-full"
           role="img"
-          aria-label={`${formatDays(used)} used, ${formatDays(stats.pendingDays)} pending, ${formatDays(stats.available)} available`}
+          aria-label={t("{used} used, {pending} pending, {available} available", {
+            used: formatDays(used),
+            pending: formatDays(stats.pendingDays),
+            available: formatDays(stats.available),
+          })}
         >
           {stats.taken > 0 && <span className="h-full rounded-l-full bg-success" style={{ width: `${pct(stats.taken)}%` }} />}
           {stats.upcoming > 0 && <span className="h-full bg-[var(--event-green-bg)]" style={{ width: `${pct(stats.upcoming)}%` }} />}
@@ -409,13 +442,13 @@ function BalanceCard() {
           {rows.map((r) => (
             <li key={r.label} className="flex items-center gap-2">
               <span className={cn("size-2 shrink-0 rounded-full", r.dot)} aria-hidden />
-              <span className="t-14 flex-1 text-fg-2">{r.label}</span>
-              <span className="t-14 text-fg tabular-nums">{plural(r.value, "day", "days")}</span>
+              <span className="t-14 flex-1 text-fg-2">{t(r.label)}</span>
+              <span className="t-14 text-fg tabular-nums">{t(r.value === 1 ? "{n} day" : "{n} days", { n: r.value })}</span>
             </li>
           ))}
         </ul>
         <Button variant="brand" className="w-full max-md:h-10" onClick={() => openOverlay({ kind: "request" })}>
-          <Icon name="request-time-off" className="text-white" /> Request time-off
+          <Icon name="request-time-off" className="text-white" /> {t("Request time-off")}
         </Button>
       </div>
     </Card>
@@ -425,6 +458,7 @@ function BalanceCard() {
 /* ------------------------------------------------------------------ quick actions */
 
 function QuickActionsCard() {
+  const t = useT();
   const today = useToday();
   const actions: { label: string; icon: React.ReactNode; href?: string; onClick?: () => void }[] = [
     { label: "New event", icon: <CalendarPlusIcon />, onClick: () => openOverlay({ kind: "event", date: today }) },
@@ -438,18 +472,18 @@ function QuickActionsCard() {
     "press flex h-10 items-center gap-2 md:h-9 rounded-lg border border-control bg-surface px-2.5 text-left outline-none transition-colors duration-150 hover-fine:bg-hover focus-visible:ring-2 focus-visible:ring-brand/40 [&_svg]:size-3.5 [&_svg]:shrink-0 [&_svg]:text-icon";
   return (
     <Card>
-      <CardHeader title="Quick actions" />
+      <CardHeader title={t("Quick actions")} />
       <div className="grid grid-cols-2 gap-2 p-3">
         {actions.map((a) =>
           a.href ? (
             <Link key={a.label} href={a.href} className={cls}>
               {a.icon}
-              <span className="t-14 salt truncate text-fg">{a.label}</span>
+              <span className="t-14 salt truncate text-fg">{t(a.label)}</span>
             </Link>
           ) : (
             <button key={a.label} type="button" onClick={a.onClick} className={cls}>
               {a.icon}
-              <span className="t-14 salt truncate text-fg">{a.label}</span>
+              <span className="t-14 salt truncate text-fg">{t(a.label)}</span>
             </button>
           ),
         )}
@@ -461,6 +495,7 @@ function QuickActionsCard() {
 /* ------------------------------------------------------------------ notifications */
 
 function NotificationsCard() {
+  const t = useT();
   const router = useRouter();
   const now = useNow();
   const notifications = useAppStore((s) => s.notifications);
@@ -472,18 +507,18 @@ function NotificationsCard() {
   return (
     <Card>
       <CardHeader
-        title="Recent notifications"
-        description={unread ? `${unread} unread` : "You’re all caught up"}
+        title={t("Recent notifications")}
+        description={unread ? t("{n} unread", { n: unread }) : t("You’re all caught up")}
         actions={
           unread ? (
             <Button variant="ghost" size="sm" onClick={markAll} className="t-12 max-md:h-9">
-              Mark all read
+              {t("Mark all read")}
             </Button>
           ) : null
         }
       />
       {recent.length === 0 ? (
-        <EmptyState icon={<BellOffIcon />} title="No notifications" hint="Approvals and reminders will show up here." />
+        <EmptyState icon={<BellOffIcon />} title={t("No notifications")} hint={t("Approvals and reminders will show up here.")} />
       ) : (
         <ul className="grid p-1.5">
           {recent.map((n) => (

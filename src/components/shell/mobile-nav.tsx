@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarBody } from "./sidebar";
 import { Brand } from "./workspace-switcher";
+import { useT } from "@/hooks/use-i18n";
 
 /** Below `lg` the sidebar slides in from the left. Closes itself on navigation. */
 export function MobileNav() {
   const pathname = usePathname();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [lastPath, setLastPath] = useState(pathname);
   if (pathname !== lastPath) {
@@ -21,13 +23,13 @@ export function MobileNav() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Open navigation" className="ml-2 lg:hidden">
+        <Button variant="ghost" size="icon" aria-label={t("Open navigation")} className="ml-2 lg:hidden">
           <MenuIcon className="size-4 text-fg" />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" showCloseButton={false} className="w-[280px] max-w-[85vw] gap-0 border-hairline bg-app p-0">
-        <SheetTitle className="sr-only">Navigation</SheetTitle>
-        <SheetDescription className="sr-only">Pages, settings and your account</SheetDescription>
+        <SheetTitle className="sr-only">{t("Navigation")}</SheetTitle>
+        <SheetDescription className="sr-only">{t("Pages, settings and your account")}</SheetDescription>
         <div className="h-[53px] shrink-0 border-b border-hairline">
           <Brand className="w-full border-r-0" />
         </div>

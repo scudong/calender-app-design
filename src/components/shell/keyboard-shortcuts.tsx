@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { deleteCalendarEvent } from "@/components/calendar/delete-event";
 import { redo, undo } from "@/stores/app-store";
 import { useToday } from "@/hooks/use-today";
+import { useT } from "@/hooks/use-i18n";
 import { useCalendarStore } from "@/stores/calendar-store";
 import { openOverlay, useOverlayStore } from "@/stores/overlay-store";
 
@@ -35,6 +36,7 @@ export function KeyboardShortcuts() {
   const router = useRouter();
   const pathname = usePathname();
   const today = useToday();
+  const t = useT();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -48,12 +50,12 @@ export function KeyboardShortcuts() {
         const isRedo = k === "y" || e.shiftKey;
         const label = isRedo ? redo() : undo();
         if (label) {
-          toast(isRedo ? "Redone" : "Undone", {
-            description: label,
-            action: { label: isRedo ? "Undo" : "Redo", onClick: () => void (isRedo ? undo() : redo()) },
+          toast(isRedo ? t("Redone") : t("Undone"), {
+            description: t(label),
+            action: { label: isRedo ? t("Undo") : t("Redo"), onClick: () => void (isRedo ? undo() : redo()) },
           });
         } else {
-          toast(isRedo ? "Nothing to redo" : "Nothing to undo");
+          toast(isRedo ? t("Nothing to redo") : t("Nothing to undo"));
         }
         return;
       }
@@ -94,7 +96,7 @@ export function KeyboardShortcuts() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pathname, router, today]);
+  }, [pathname, router, today, t]);
 
   return null;
 }

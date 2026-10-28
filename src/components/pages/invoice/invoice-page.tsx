@@ -14,9 +14,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { addDays, formatShort } from "@/lib/dates";
+import { addDays, formatLong, formatShort } from "@/lib/dates";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useToday } from "@/hooks/use-today";
 import { uid, useAppStore } from "@/stores/app-store";
 import { InvoiceEditor } from "./invoice-editor";
@@ -29,6 +30,7 @@ type StatusFilter = "all" | InvoiceStatus;
 const STATUSES: InvoiceStatus[] = ["draft", "sent", "paid", "overdue"];
 
 export function InvoicePage() {
+  const t = useT();
   const today = useToday();
   const invoices = useAppStore((s) => s.invoices);
   const view = useInvoiceUi((s) => s.view);
@@ -71,12 +73,15 @@ export function InvoicePage() {
       <header className="z-10 flex shrink-0 flex-col gap-3 border-b border-hairline bg-surface px-4 py-3 md:sticky md:top-0 md:h-[68px] md:flex-row md:items-center md:py-0">
         <div className="flex min-w-0 items-center gap-3 md:flex-1">
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <h2 className="t-16 text-fg">Invoices</h2>
+            <h2 className="t-16 text-fg">{t("Invoices")}</h2>
             <p className="t-14 truncate text-fg-2">
-              {invoices.length} {invoices.length === 1 ? "invoice" : "invoices"} · {formatTotals(stats.outstanding)} outstanding
+              {t(invoices.length === 1 ? "{n} invoice · {total} outstanding" : "{n} invoices · {total} outstanding", {
+                n: invoices.length,
+                total: formatTotals(stats.outstanding),
+              })}
             </p>
           </div>
-          <Button variant="brand" size="icon" className="size-10 md:hidden" aria-label="New invoice" onClick={() => edit()}>
+          <Button variant="brand" size="icon" className="size-10 md:hidden" aria-label={t("New invoice")} onClick={() => edit()}>
             <PlusIcon className="size-4" />
           </Button>
         </div>
@@ -85,8 +90,8 @@ export function InvoicePage() {
             <Icon name="search" />
             <input
               type="search"
-              placeholder="Search number or client"
-              aria-label="Search invoices"
+              placeholder={t("Search number or client")}
+              aria-label={t("Search invoices")}
               className="t-14 min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-placeholder max-md:text-[16px] [&::-webkit-search-cancel-button]:hidden"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -94,7 +99,7 @@ export function InvoicePage() {
             {query && (
               <button
                 type="button"
-                aria-label="Clear search"
+                aria-label={t("Clear search")}
                 className="-mr-1 rounded p-0.5 text-icon hover-fine:text-fg max-md:-mr-2 max-md:p-2"
                 onClick={() => setQuery("")}
               >
@@ -108,11 +113,11 @@ export function InvoicePage() {
               groups={[
                 {
                   id: "status",
-                  label: "Status",
+                  label: t("Status"),
                   type: "single",
                   options: [
-                    { value: "all", label: "All statuses" },
-                    ...STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
+                    { value: "all", label: t("All statuses") },
+                    ...STATUSES.map((s) => ({ value: s, label: t(STATUS_LABELS[s]) })),
                   ],
                   value: status,
                   onChange: (v) => setStatus(v as StatusFilter),
@@ -123,38 +128,38 @@ export function InvoicePage() {
             />
           </div>
           <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
-            <SelectTrigger size="sm" className="h-[30px] w-[132px] max-md:hidden" aria-label="Filter by status">
+            <SelectTrigger size="sm" className="h-[30px] w-[132px] max-md:hidden" aria-label={t("Filter by status")}>
               <Icon name="filter" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent position="popper" align="end">
-              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="all">{t("All statuses")}</SelectItem>
               {STATUSES.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {STATUS_LABELS[s]}
+                  {t(STATUS_LABELS[s])}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <div className="h-4 w-px bg-hairline max-md:hidden" aria-hidden />
           <Button variant="brand" className="max-md:hidden" onClick={() => edit()}>
-            <PlusIcon /> New invoice
+            <PlusIcon /> {t("New invoice")}
           </Button>
         </div>
       </header>
 
       <div className="flex flex-col gap-4 p-4">
         <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-hairline bg-surface md:grid-cols-4">
-          <Stat label="Outstanding" value={formatTotals(stats.outstanding)} count={stats.outstanding.length} />
+          <Stat label={t("Outstanding")} value={formatTotals(stats.outstanding)} count={stats.outstanding.length} />
           <Stat
-            label="Overdue"
+            label={t("Overdue")}
             value={formatTotals(stats.overdue)}
             count={stats.overdue.length}
             danger={stats.overdue.length > 0}
             onClick={() => setStatus("overdue")}
           />
-          <Stat label="Paid" value={formatTotals(stats.paid)} count={stats.paid.length} onClick={() => setStatus("paid")} />
-          <Stat label="Drafts" value={formatTotals(stats.drafts)} count={stats.drafts.length} onClick={() => setStatus("draft")} />
+          <Stat label={t("Paid")} value={formatTotals(stats.paid)} count={stats.paid.length} onClick={() => setStatus("paid")} />
+          <Stat label={t("Drafts")} value={formatTotals(stats.drafts)} count={stats.drafts.length} onClick={() => setStatus("draft")} />
         </div>
 
         <section className="overflow-hidden rounded-xl border border-hairline bg-surface">
@@ -164,9 +169,9 @@ export function InvoicePage() {
                 <ReceiptIcon className="size-4 text-icon" />
               </span>
               <div className="flex flex-col gap-1.5">
-                <p className="t-14 text-fg">{filtered ? "No invoices match" : "No invoices yet"}</p>
+                <p className="t-14 text-fg">{filtered ? t("No invoices match") : t("No invoices yet")}</p>
                 <p className="t-14 text-fg-2">
-                  {filtered ? "Try a different search or status." : "Create your first invoice to get paid."}
+                  {filtered ? t("Try a different search or status.") : t("Create your first invoice to get paid.")}
                 </p>
               </div>
               {filtered ? (
@@ -176,11 +181,11 @@ export function InvoicePage() {
                     setStatus("all");
                   }}
                 >
-                  Clear filters
+                  {t("Clear filters")}
                 </Button>
               ) : (
                 <Button onClick={() => edit()}>
-                  <PlusIcon /> New invoice
+                  <PlusIcon /> {t("New invoice")}
                 </Button>
               )}
             </div>
@@ -202,7 +207,9 @@ export function InvoicePage() {
                       <span className="flex w-full items-center gap-3">
                         <span className="t-12 min-w-0 flex-1 truncate text-fg-2">
                           {inv.number} ·{" "}
-                          <span className={cn(st === "overdue" && "text-danger")}>Due {formatShort(inv.dueDate)}</span>
+                          <span className={cn(st === "overdue" && "text-danger")}>
+                            {t("Due {date}", { date: formatShort(inv.dueDate) })}
+                          </span>
                         </span>
                         <InvoiceStatusBadge status={st} />
                       </span>
@@ -225,14 +232,14 @@ export function InvoicePage() {
                 </colgroup>
                 <thead>
                   <tr className="h-10 bg-app text-left">
-                    <th className="t-14 px-4 font-medium text-fg-2">Number</th>
-                    <th className="t-14 px-2 font-medium text-fg-2">Client</th>
-                    <th className="t-14 px-2 font-medium text-fg-2">Issued</th>
-                    <th className="t-14 px-2 font-medium text-fg-2">Due</th>
-                    <th className="t-14 px-2 text-right font-medium text-fg-2">Amount</th>
-                    <th className="t-14 px-4 font-medium text-fg-2">Status</th>
+                    <th className="t-14 px-4 font-medium text-fg-2">{t("Number")}</th>
+                    <th className="t-14 px-2 font-medium text-fg-2">{t("Client")}</th>
+                    <th className="t-14 px-2 font-medium text-fg-2">{t("Issued")}</th>
+                    <th className="t-14 px-2 font-medium text-fg-2">{t("Due")}</th>
+                    <th className="t-14 px-2 text-right font-medium text-fg-2">{t("Amount")}</th>
+                    <th className="t-14 px-4 font-medium text-fg-2">{t("Status")}</th>
                     <th className="pr-3">
-                      <span className="sr-only">Actions</span>
+                      <span className="sr-only">{t("Actions")}</span>
                     </th>
                   </tr>
                 </thead>
@@ -256,9 +263,9 @@ export function InvoicePage() {
                         </button>
                       </td>
                       <td className="t-14 truncate px-2 text-table">{inv.client}</td>
-                      <td className="t-14 px-2 text-table">{formatShort(inv.issueDate)}, {inv.issueDate.slice(0, 4)}</td>
+                      <td className="t-14 px-2 text-table">{formatLong(inv.issueDate)}</td>
                       <td className={cn("t-14 px-2", st === "overdue" ? "text-danger" : "text-table")}>
-                        {formatShort(inv.dueDate)}, {inv.dueDate.slice(0, 4)}
+                        {formatLong(inv.dueDate)}
                       </td>
                       <td className="t-14 px-2 text-right text-table tabular-nums">{formatMoney(total, inv.currency)}</td>
                       <td className="px-4">
@@ -295,6 +302,7 @@ function Stat({
   danger?: boolean;
   onClick?: () => void;
 }) {
+  const t = useT();
   const body = (
     <>
       <span className="t-12 flex w-full items-center justify-between text-fg-2">
@@ -317,7 +325,7 @@ function Stat({
   return (
     <button
       type="button"
-      title={`Show ${label.toLowerCase()}`}
+      title={t("Show {label}", { label: label.toLowerCase() })}
       onClick={onClick}
       className={cn(base, "outline-none transition-colors duration-150 hover-fine:bg-hover/50 focus-visible:bg-hover")}
     >
@@ -327,6 +335,7 @@ function Stat({
 }
 
 function RowMenu({ invoice, today, triggerClassName }: { invoice: Invoice; today: string; triggerClassName?: string }) {
+  const t = useT();
   const invoices = useAppStore((s) => s.invoices);
   const saveInvoice = useAppStore((s) => s.saveInvoice);
   const setInvoiceStatus = useAppStore((s) => s.setInvoiceStatus);
@@ -336,9 +345,9 @@ function RowMenu({ invoice, today, triggerClassName }: { invoice: Invoice; today
 
   const mark = (status: InvoiceStatus) => {
     setInvoiceStatus(invoice.id, status);
-    toast.success(status === "paid" ? "Marked as paid" : "Marked as sent", {
+    toast.success(status === "paid" ? t("Marked as paid") : t("Marked as sent"), {
       description: `${invoice.number} · ${invoice.client}`,
-      action: { label: "Undo", onClick: () => useAppStore.getState().setInvoiceStatus(invoice.id, invoice.status) },
+      action: { label: t("Undo"), onClick: () => useAppStore.getState().setInvoiceStatus(invoice.id, invoice.status) },
     });
   };
 
@@ -352,42 +361,42 @@ function RowMenu({ invoice, today, triggerClassName }: { invoice: Invoice; today
       dueDate: addDays(today, 30),
       items: invoice.items.map((i) => ({ ...i, id: uid("it") })),
     });
-    toast.success("Invoice duplicated", {
-      description: `${copy.number} · draft`,
-      action: { label: "Edit", onClick: () => useInvoiceUi.getState().edit(copy.id) },
+    toast.success(t("Invoice duplicated"), {
+      description: `${copy.number} · ${t(copy.status)}`,
+      action: { label: t("Edit"), onClick: () => useInvoiceUi.getState().edit(copy.id) },
     });
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" className={triggerClassName} aria-label={`Actions for ${invoice.number}`}>
+        <Button variant="ghost" size="icon-sm" className={triggerClassName} aria-label={t("Actions for {number}", { number: invoice.number })}>
           <Icon name="more" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48 max-md:[&_[role^=menuitem]]:min-h-10">
         <DropdownMenuItem onSelect={() => view(invoice.id)}>
-          <EyeIcon /> View
+          <EyeIcon /> {t("View")}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => edit(invoice.id)}>
-          <PencilIcon /> Edit
+          <PencilIcon /> {t("Edit")}
         </DropdownMenuItem>
         {invoice.status === "draft" && (
           <DropdownMenuItem onSelect={() => mark("sent")}>
-            <SendIcon /> Mark as sent
+            <SendIcon /> {t("Mark as sent")}
           </DropdownMenuItem>
         )}
         {invoice.status !== "paid" && (
           <DropdownMenuItem onSelect={() => mark("paid")}>
-            <CheckIcon /> Mark as paid
+            <CheckIcon /> {t("Mark as paid")}
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onSelect={duplicate}>
-          <CopyIcon /> Duplicate
+          <CopyIcon /> {t("Duplicate")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onSelect={() => deleteInvoice(invoice.id)}>
-          <Trash2Icon /> Delete
+          <Trash2Icon /> {t("Delete")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

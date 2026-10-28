@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/time-off/status-badge";
 import { formatLong, formatTimeRange, relativeTime } from "@/lib/dates";
 import { useNow, useToday } from "@/hooks/use-today";
+import { useT } from "@/hooks/use-i18n";
 import { useAppStore } from "@/stores/app-store";
 import { useCalendarStore } from "@/stores/calendar-store";
 import { openOverlay } from "@/stores/overlay-store";
@@ -31,13 +32,14 @@ export function RequestDetailsDialog({ open, onClose, requestId }: { open: boole
   const deleteRequest = useAppStore((s) => s.deleteRequest);
   const today = useToday();
   const now = useNow();
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
 
   if (!request) return null;
   const canCancel = request.status === "pending" || (request.status === "approved" && request.from >= today);
 
   const rows: [string, React.ReactNode][] = [
-    ["Leave type", request.type],
+    ["Leave type", t(request.type)],
     ["Duration", request.duration],
     ["From", formatLong(request.from)],
     ["To", formatLong(request.to)],
@@ -54,12 +56,12 @@ export function RequestDetailsDialog({ open, onClose, requestId }: { open: boole
           <DialogHeader className="gap-3">
             <StatusBadge status={request.status} className="self-start" />
             <DialogTitle className="t-16 leading-[1.3]">{request.notes}</DialogTitle>
-            <DialogDescription className="sr-only">Leave request details</DialogDescription>
+            <DialogDescription className="sr-only">{t("Leave request details")}</DialogDescription>
           </DialogHeader>
           <dl className="grid gap-3">
             {rows.map(([k, v]) => (
               <div key={k} className="flex items-center justify-between gap-4">
-                <dt className="t-14 text-fg-2">{k}</dt>
+                <dt className="t-14 text-fg-2">{t(k)}</dt>
                 <dd className="t-14 text-right text-table">{v}</dd>
               </div>
             ))}
@@ -73,11 +75,11 @@ export function RequestDetailsDialog({ open, onClose, requestId }: { open: boole
                 router.push("/time-off");
               }}
             >
-              <CalendarSearchIcon /> Show in calendar
+              <CalendarSearchIcon /> {t("Show in calendar")}
             </Button>
             {request.status === "pending" && (
               <Button onClick={() => openOverlay({ kind: "request", requestId: request.id })}>
-                <PencilIcon /> Edit
+                <PencilIcon /> {t("Edit")}
               </Button>
             )}
             {canCancel && (
@@ -87,21 +89,21 @@ export function RequestDetailsDialog({ open, onClose, requestId }: { open: boole
                   onClose();
                 }}
               >
-                <XIcon /> Cancel request
+                <XIcon /> {t("Cancel request")}
               </Button>
             )}
             <Button variant="destructive" className="ml-auto" onClick={() => setConfirming(true)}>
-              <Trash2Icon /> Delete
+              <Trash2Icon /> {t("Delete")}
             </Button>
           </div>
           {request.status === "pending" && (
             <div className="-mx-5 -mb-5 flex items-center gap-2 border-t border-hairline bg-app px-5 py-3">
-              <span className="t-12 flex-1 text-fg-2">Manager preview — simulate a decision</span>
+              <span className="t-12 flex-1 text-fg-2">{t("Manager preview — simulate a decision")}</span>
               <Button size="sm" onClick={() => setStatus(request.id, "declined")}>
-                <XIcon className="text-danger" /> Decline
+                <XIcon className="text-danger" /> {t("Decline")}
               </Button>
               <Button size="sm" variant="brand" onClick={() => setStatus(request.id, "approved")}>
-                <CheckIcon /> Approve
+                <CheckIcon /> {t("Approve")}
               </Button>
             </div>
           )}
@@ -111,13 +113,13 @@ export function RequestDetailsDialog({ open, onClose, requestId }: { open: boole
       <AlertDialog open={confirming} onOpenChange={setConfirming}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="t-16">Delete this request?</AlertDialogTitle>
+            <AlertDialogTitle className="t-16">{t("Delete this request?")}</AlertDialogTitle>
             <AlertDialogDescription className="t-14 leading-[1.4]">
-              It will be removed from your history and its calendar events deleted. You can undo right after.
+              {t("It will be removed from your history and its calendar events deleted. You can undo right after.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep</AlertDialogCancel>
+            <AlertDialogCancel>{t("Keep")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
@@ -125,7 +127,7 @@ export function RequestDetailsDialog({ open, onClose, requestId }: { open: boole
                 onClose();
               }}
             >
-              Delete request
+              {t("Delete request")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

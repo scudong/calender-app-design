@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { WEEKDAYS_SHORT, dayOfWeek, formatTime, formatTimeRange, fromKey } from "@/lib/dates";
+import { formatLong, formatTime, formatTimeRange, fromKey, weekdayShort } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { CalEvent } from "@/lib/types";
+import { useT } from "@/hooks/use-i18n";
 import { useNow, useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { useCalendarStore } from "@/stores/calendar-store";
@@ -50,6 +51,7 @@ export function DayHeaders({ days }: { days: string[] }) {
   const setView = useCalendarStore((s) => s.setView);
   const compact = useCalendarStore((s) => s.compact);
   const today = useToday();
+  const t = useT();
 
   return (
     <div className="flex h-14 w-full shrink-0 items-start overflow-hidden border-b border-hairline">
@@ -67,12 +69,12 @@ export function DayHeaders({ days }: { days: string[] }) {
                 setView("day");
               } else setDate(d);
             }}
-            aria-label={`${fromKey(d).toDateString()}${isSelected ? ", selected — open day view" : ""}`}
+            aria-label={isSelected ? t("{date}, selected — open day view", { date: formatLong(d) }) : formatLong(d)}
             aria-pressed={isSelected}
             className="group flex h-full min-w-0 flex-1 items-center gap-2 overflow-hidden border-l border-hairline px-3 text-left outline-none focus-visible:bg-hover max-md:flex-col max-md:justify-center max-md:gap-1 max-md:px-0"
           >
             <span className="t-14 shrink-0 text-center whitespace-nowrap text-dayname max-md:text-[11px] max-md:tracking-normal">
-              {WEEKDAYS_SHORT[dayOfWeek(d)]}
+              {weekdayShort(d)}
             </span>
             <span
               className={cn(
@@ -98,9 +100,10 @@ function WeekStrip({ days }: { days: string[] }) {
   const selected = useCalendarStore((s) => s.date);
   const setDate = useCalendarStore((s) => s.setDate);
   const today = useToday();
+  const t = useT();
 
   return (
-    <div className="flex h-16 w-full shrink-0 items-center gap-1 border-b border-hairline px-2 md:hidden" role="tablist" aria-label="Days of the week">
+    <div className="flex h-16 w-full shrink-0 items-center gap-1 border-b border-hairline px-2 md:hidden" role="tablist" aria-label={t("Days of the week")}>
       {days.map((d) => {
         const isSelected = d === selected;
         const isToday = d === today;
@@ -113,7 +116,7 @@ function WeekStrip({ days }: { days: string[] }) {
             onClick={() => setDate(d)}
             className="press flex h-12 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
           >
-            <span className="text-[11px] leading-none text-dayname">{WEEKDAYS_SHORT[dayOfWeek(d)]}</span>
+            <span className="text-[11px] leading-none text-dayname">{weekdayShort(d)}</span>
             <span
               className={cn(
                 "t-16 flex size-7 items-center justify-center rounded-lg transition-[background-color,color] duration-150",
@@ -140,6 +143,7 @@ export function TimeGrid({ days, strip }: { days: string[]; strip?: string[] }) 
   const selectedEventId = useCalendarStore((s) => (s.popover?.kind === "event" ? s.popover.id : null));
   const today = useToday();
   const now = useNow();
+  const t = useT();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -448,7 +452,7 @@ export function TimeGrid({ days, strip }: { days: string[]; strip?: string[] }) 
                 <div
                   key={day}
                   className="relative h-full min-w-0 flex-1 border-l border-hairline"
-                  aria-label={`${fromKey(day).toDateString()} schedule`}
+                  aria-label={t("{date} schedule", { date: formatLong(day) })}
                   role="group"
                 >
                   {columns[i].map(({ event, column, columns: count }) => (
@@ -483,7 +487,7 @@ export function TimeGrid({ days, strip }: { days: string[]; strip?: string[] }) 
                     <div
                       className="pointer-events-none absolute right-0 left-0 z-10 flex items-center"
                       style={{ top: minutesToPx(nowMinutes) - 4 }}
-                      aria-label={`Now, ${formatTime(Math.floor(nowMinutes), timeFormat)}`}
+                      aria-label={t("Now, {time}", { time: formatTime(Math.floor(nowMinutes), timeFormat) })}
                     >
                       <span className="-ml-1 size-2 rounded-full bg-brand" />
                       <span className="h-[1.5px] flex-1 bg-brand" />
@@ -522,13 +526,14 @@ function EventBlock({
   const compact = height < 44;
   const locked = Boolean(event.requestId);
   const time = formatTimeRange(event.start, event.end, timeFormat);
+  const t = useT();
 
   return (
     <div
       data-event-id={event.id}
       role="button"
       tabIndex={0}
-      aria-label={`${event.title}, ${time}${event.note ? `, ${event.note}` : ""}`}
+      aria-label={`${t(event.title)}, ${time}${event.note ? `, ${t(event.note)}` : ""}`}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -559,7 +564,7 @@ function EventBlock({
       {compact ? (
         <div className="flex h-full w-full items-center px-2 @max-[84px]:px-1">
           <p className="t-14 salt min-w-0 flex-1 truncate @max-[84px]:text-[11px] @max-[84px]:tracking-normal">
-            {event.title}
+            {t(event.title)}
             {height >= 28 ? null : <span className="t-12 ml-1 opacity-80 @max-[84px]:hidden">{formatTime(event.start, timeFormat)}</span>}
           </p>
         </div>
@@ -568,15 +573,15 @@ function EventBlock({
           {/* Regular columns: the design's title / time / note stack */}
           <div className="contents @max-[84px]:hidden">
             {height >= 60 ? (
-              <TwoLineTitle text={event.title} className="t-14 salt w-full shrink-0 overflow-hidden" />
+              <TwoLineTitle text={t(event.title)} className="t-14 salt w-full shrink-0 overflow-hidden" />
             ) : (
-              <p className="t-14 salt w-full shrink-0 truncate">{event.title}</p>
+              <p className="t-14 salt w-full shrink-0 truncate">{t(event.title)}</p>
             )}
             <p className="t-12 salt w-full shrink-0 truncate">{time}</p>
-            {event.note && <p className="t-12 salt w-full shrink-0 truncate">{event.note}</p>}
+            {event.note && <p className="t-12 salt w-full shrink-0 truncate">{t(event.note)}</p>}
           </div>
           {/* Narrow columns (phone week view, side-by-side overlaps): title only, wrapping anywhere */}
-          <p className="hidden text-[11px] leading-[13px] break-words hyphens-auto @max-[84px]:line-clamp-(--lines)">{event.title}</p>
+          <p className="hidden text-[11px] leading-[13px] break-words hyphens-auto @max-[84px]:line-clamp-(--lines)">{t(event.title)}</p>
         </div>
       )}
       {!locked && (

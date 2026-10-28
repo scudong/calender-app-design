@@ -6,7 +6,7 @@ export const DESIGN_DATE = "2026-11-10";
 /** Used only for server rendering; the browser swaps in the real date on hydration. */
 export const SERVER_TODAY = "2026-10-26";
 
-export const STATE_VERSION = 3;
+export const STATE_VERSION = 4;
 
 const h = (hours: number, minutes = 0) => hours * 60 + minutes;
 
@@ -129,7 +129,7 @@ export function createSeed(): AppState {
       {
         id: "rq-6",
         status: "pending",
-        type: "Personal",
+        type: "Personal leave",
         duration: "2 hours",
         days: 0.25,
         from: "2026-11-10",
@@ -211,6 +211,7 @@ export function createSeed(): AppState {
       bio: "Designs calm, fast interfaces for the people team.",
     },
     settings: {
+      language: "zh",
       weekStartsOn: 0,
       timeFormat: "24h",
       dayStartHour: 6,

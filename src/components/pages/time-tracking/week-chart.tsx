@@ -1,7 +1,8 @@
 "use client";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatWeekday, fromKey, WEEKDAYS_SHORT } from "@/lib/dates";
+import { useT } from "@/hooks/use-i18n";
+import { formatWeekday, fromKey, weekdayShortFromDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { BILLABLE_COLOR, formatHours, NON_BILLABLE_COLOR } from "./shared";
 
@@ -19,6 +20,7 @@ export function WeekChart({
   today: string;
   onSelectDay: (date: string) => void;
 }) {
+  const t = useT();
   const max = Math.max(TARGET, ...days.map((d) => d.billable + d.nonBillable));
   const px = (minutes: number) => Math.round((minutes / max) * PLOT_HEIGHT);
   const targetY = px(TARGET);
@@ -47,7 +49,7 @@ export function WeekChart({
                     type="button"
                     onClick={() => onSelectDay(d.date)}
                     disabled={!total}
-                    aria-label={`${formatWeekday(d.date)}: ${formatHours(total)}`}
+                    aria-label={t("{day}: {hours}", { day: formatWeekday(d.date), hours: formatHours(total) })}
                     className="group flex h-full flex-col items-center justify-end rounded-md outline-none focus-visible:ring-3 focus-visible:ring-brand/15 disabled:cursor-default"
                   >
                     {total > 0 && (
@@ -77,11 +79,11 @@ export function WeekChart({
                   <span className="t-12 opacity-70">{formatWeekday(d.date)}</span>
                   <span className="t-12 flex items-center gap-1.5">
                     <span className="size-2 rounded-[2px]" style={{ background: BILLABLE_COLOR }} />
-                    Billable {formatHours(d.billable)}
+                    {t("Billable {hours}", { hours: formatHours(d.billable) })}
                   </span>
                   <span className="t-12 flex items-center gap-1.5">
                     <span className="size-2 rounded-[2px]" style={{ background: NON_BILLABLE_COLOR }} />
-                    Non-billable {formatHours(d.nonBillable)}
+                    {t("Non-billable {hours}", { hours: formatHours(d.nonBillable) })}
                   </span>
                 </TooltipContent>
               </Tooltip>
@@ -95,7 +97,7 @@ export function WeekChart({
           return (
             <div key={d.date} className="flex flex-col items-center gap-1.5">
               <span className={cn("t-12-tight", isToday ? "text-brand" : "text-dayname")}>
-                {WEEKDAYS_SHORT[fromKey(d.date).getDay()]}
+                {weekdayShortFromDate(fromKey(d.date))}
               </span>
               <span
                 className={cn(
@@ -119,13 +121,14 @@ function compactHours(minutes: number): string {
 }
 
 export function ChartLegend() {
+  const t = useT();
   return (
     <div className="flex items-center gap-3">
       <span className="t-12 flex items-center gap-1.5 text-fg-2">
-        <span className="size-2 rounded-[2px]" style={{ background: BILLABLE_COLOR }} /> Billable
+        <span className="size-2 rounded-[2px]" style={{ background: BILLABLE_COLOR }} /> {t("Billable")}
       </span>
       <span className="t-12 flex items-center gap-1.5 text-fg-2">
-        <span className="size-2 rounded-[2px]" style={{ background: NON_BILLABLE_COLOR }} /> Non-billable
+        <span className="size-2 rounded-[2px]" style={{ background: NON_BILLABLE_COLOR }} /> {t("Non-billable")}
       </span>
     </div>
   );

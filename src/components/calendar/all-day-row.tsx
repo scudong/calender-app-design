@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useAppStore } from "@/stores/app-store";
 import { useCalendarStore } from "@/stores/calendar-store";
 import { openOverlay } from "@/stores/overlay-store";
@@ -18,18 +19,19 @@ export function AllDayRow({ days }: { days: string[] }) {
   const events = useAppStore((s) => s.events);
   const holidays = useAppStore((s) => s.holidays);
   const openPopover = useCalendarStore((s) => s.openPopover);
+  const t = useT();
 
   const chipsByDay = useMemo(
     () =>
       days.map((day): Chip[] => [
         ...holidays
           .filter((h) => h.date === day)
-          .map((h) => ({ kind: "holiday" as const, id: h.id, title: "National holiday", style: eventStyle("purple") })),
+          .map((h) => ({ kind: "holiday" as const, id: h.id, title: t("National holiday"), style: eventStyle("purple") })),
         ...events
           .filter((e) => e.allDay && e.date === day)
-          .map((e) => ({ kind: "event" as const, id: e.id, title: e.title, style: eventStyle(e.color) })),
+          .map((e) => ({ kind: "event" as const, id: e.id, title: t(e.title), style: eventStyle(e.color) })),
       ]),
-    [days, events, holidays],
+    [days, events, holidays, t],
   );
 
   const most = Math.max(1, ...chipsByDay.map((c) => c.length));
@@ -38,13 +40,13 @@ export function AllDayRow({ days }: { days: string[] }) {
   return (
     <div className="flex w-full shrink-0 items-stretch overflow-hidden border-b border-hairline" style={{ height }}>
       <div className="sticky left-0 z-10 flex w-(--axis) shrink-0 items-center justify-end bg-surface pr-3 max-md:pr-1.5">
-        {most > 1 && <span className="t-12 text-placeholder max-md:text-[10px]">All day</span>}
+        {most > 1 && <span className="t-12 text-placeholder max-md:text-[10px]">{t("All day")}</span>}
       </div>
       {days.map((day, i) => (
         <div
           key={day}
           role="group"
-          aria-label="All-day events"
+          aria-label={t("All-day events")}
           onClick={(e) => {
             if (e.target === e.currentTarget) openOverlay({ kind: "event", date: day, allDay: true });
           }}

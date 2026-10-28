@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useT } from "@/hooks/use-i18n";
 import { formatLong } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { useToday } from "@/hooks/use-today";
@@ -20,6 +21,7 @@ import { downloadInvoice, effectiveStatus, formatMoney, invoiceTotal, lineTotal,
 import { InvoiceStatusBadge } from "./status-badge";
 
 export function InvoiceView() {
+  const t = useT();
   const viewId = useInvoiceUi((s) => s.viewId);
   const closeView = useInvoiceUi((s) => s.closeView);
   const edit = useInvoiceUi((s) => s.edit);
@@ -35,17 +37,17 @@ export function InvoiceView() {
   const download = () => {
     if (!invoice) return;
     downloadInvoice(invoice, profile);
-    toast.success("Invoice downloaded", { description: `${invoice.number}.html` });
+    toast.success(t("Invoice downloaded"), { description: `${invoice.number}.html` });
   };
   const send = () => {
     if (!invoice) return;
     setInvoiceStatus(invoice.id, "sent");
-    toast.success("Invoice sent", { description: `${invoice.number} · ${invoice.client}` });
+    toast.success(t("Invoice sent"), { description: `${invoice.number} · ${invoice.client}` });
   };
   const markPaid = () => {
     if (!invoice) return;
     setInvoiceStatus(invoice.id, "paid");
-    toast.success("Marked as paid", { description: `${invoice.number} · ${formatMoney(total, invoice.currency)}` });
+    toast.success(t("Marked as paid"), { description: `${invoice.number} · ${formatMoney(total, invoice.currency)}` });
   };
 
   return (
@@ -55,27 +57,27 @@ export function InvoiceView() {
           <>
             <div className="flex items-center gap-2 border-b border-hairline bg-surface py-3 pr-12 pl-4">
               <DialogTitle className="t-14 min-w-0 flex-1 truncate text-fg">{invoice.number}</DialogTitle>
-              <DialogDescription className="sr-only">Invoice for {invoice.client}</DialogDescription>
+              <DialogDescription className="sr-only">{t("Invoice for {client}", { client: invoice.client })}</DialogDescription>
               {/* Phones move these into the bottom action bar */}
               <div className="flex items-center gap-2 max-sm:hidden">
                 {invoice.status !== "paid" && (
                   <Button size="sm" className="px-2" onClick={() => edit(invoice.id)}>
-                    <PencilIcon className="text-icon" /> Edit
+                    <PencilIcon className="text-icon" /> {t("Edit")}
                   </Button>
                 )}
                 <Button size="sm" className="px-2" onClick={() => printInvoice(invoice, profile)}>
-                  <PrinterIcon className="text-icon" /> Print
+                  <PrinterIcon className="text-icon" /> {t("Print")}
                 </Button>
                 <Button size="sm" className="px-2" onClick={download}>
-                  <DownloadIcon className="text-icon" /> Download
+                  <DownloadIcon className="text-icon" /> {t("Download")}
                 </Button>
                 {invoice.status === "draft" ? (
                   <Button size="sm" variant="brand" className="px-2" onClick={send}>
-                    <SendIcon /> Send
+                    <SendIcon /> {t("Send")}
                   </Button>
                 ) : invoice.status !== "paid" ? (
                   <Button size="sm" variant="brand" className="px-2" onClick={markPaid}>
-                    <CheckIcon /> Mark as paid
+                    <CheckIcon /> {t("Mark as paid")}
                   </Button>
                 ) : null}
               </div>
@@ -86,7 +88,7 @@ export function InvoiceView() {
               <article className="flex flex-col gap-7 rounded-lg border border-hairline bg-surface p-8 shadow-[0_1px_2px_rgba(0,0,0,0.03)] max-sm:gap-6 max-sm:p-5">
                 <header className="flex items-start justify-between gap-6 max-sm:flex-col max-sm:gap-5">
                   <div className="flex flex-col gap-2.5">
-                    <h2 className="text-[24px] leading-none font-medium tracking-[-0.48px] text-heading">Invoice</h2>
+                    <h2 className="text-[24px] leading-none font-medium tracking-[-0.48px] text-heading">{t("Invoice")}</h2>
                     <span className="t-14 text-fg-2">{invoice.number}</span>
                     <InvoiceStatusBadge status={status} className="mt-1 self-start" />
                   </div>
@@ -98,10 +100,10 @@ export function InvoiceView() {
                 </header>
 
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-y border-hairline py-5 sm:grid-cols-3 sm:gap-6">
-                  <Meta label="Bill to" value={invoice.client} className="max-sm:col-span-2" />
-                  <Meta label="Issued" value={formatLong(invoice.issueDate)} />
+                  <Meta label={t("Bill to")} value={invoice.client} className="max-sm:col-span-2" />
+                  <Meta label={t("Issued")} value={formatLong(invoice.issueDate)} />
                   <Meta
-                    label="Due"
+                    label={t("Due")}
                     value={formatLong(invoice.dueDate)}
                     danger={status === "overdue"}
                   />
@@ -124,10 +126,10 @@ export function InvoiceView() {
                 <table className="w-full border-collapse max-sm:hidden">
                   <thead>
                     <tr className="border-b border-hairline">
-                      <th className="t-12 pb-2.5 text-left font-medium text-fg-2">Description</th>
-                      <th className="t-12 w-16 pb-2.5 text-right font-medium text-fg-2">Qty</th>
-                      <th className="t-12 w-28 pb-2.5 text-right font-medium text-fg-2">Rate</th>
-                      <th className="t-12 w-28 pb-2.5 text-right font-medium text-fg-2">Amount</th>
+                      <th className="t-12 pb-2.5 text-left font-medium text-fg-2">{t("Description")}</th>
+                      <th className="t-12 w-16 pb-2.5 text-right font-medium text-fg-2">{t("Qty")}</th>
+                      <th className="t-12 w-28 pb-2.5 text-right font-medium text-fg-2">{t("Rate")}</th>
+                      <th className="t-12 w-28 pb-2.5 text-right font-medium text-fg-2">{t("Amount")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -147,9 +149,9 @@ export function InvoiceView() {
                 </table>
 
                 <dl className="ml-auto grid w-full grid-cols-[1fr_auto] gap-y-3 sm:w-64 sm:gap-x-4">
-                  <dt className="t-14 text-fg-2">Subtotal</dt>
+                  <dt className="t-14 text-fg-2">{t("Subtotal")}</dt>
                   <dd className="t-14 text-right text-table tabular-nums">{formatMoney(total, invoice.currency)}</dd>
-                  <dt className="t-14 border-t border-hairline pt-3 text-fg">{status === "paid" ? "Total paid" : "Total due"}</dt>
+                  <dt className="t-14 border-t border-hairline pt-3 text-fg">{status === "paid" ? t("Total paid") : t("Total due")}</dt>
                   <dd className="border-t border-hairline pt-3 text-right text-[20px] leading-none font-medium tracking-[-0.4px] text-fg tabular-nums">
                     {formatMoney(total, invoice.currency)}
                   </dd>
@@ -157,7 +159,7 @@ export function InvoiceView() {
 
                 {invoice.notes.trim() && (
                   <div className="flex flex-col gap-2 border-t border-hairline pt-5">
-                    <span className="t-12 text-fg-2">Notes</span>
+                    <span className="t-12 text-fg-2">{t("Notes")}</span>
                     <p className="t-14 leading-[1.45] whitespace-pre-wrap text-table">{invoice.notes}</p>
                   </div>
                 )}
@@ -169,39 +171,39 @@ export function InvoiceView() {
               {invoice.status === "paid" ? (
                 <>
                   <Button className="h-10 flex-1" onClick={() => printInvoice(invoice, profile)}>
-                    <PrinterIcon className="text-icon" /> Print
+                    <PrinterIcon className="text-icon" /> {t("Print")}
                   </Button>
                   <Button className="h-10 flex-1" onClick={download}>
-                    <DownloadIcon className="text-icon" /> Download
+                    <DownloadIcon className="text-icon" /> {t("Download")}
                   </Button>
                 </>
               ) : (
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button size="icon" className="size-10" aria-label="More actions">
+                      <Button size="icon" className="size-10" aria-label={t("More actions")}>
                         <Icon name="more" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" side="top" className="w-48 [&_[role^=menuitem]]:min-h-10">
                       <DropdownMenuItem onSelect={() => edit(invoice.id)}>
-                        <PencilIcon /> Edit
+                        <PencilIcon /> {t("Edit")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => printInvoice(invoice, profile)}>
-                        <PrinterIcon /> Print
+                        <PrinterIcon /> {t("Print")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={download}>
-                        <DownloadIcon /> Download
+                        <DownloadIcon /> {t("Download")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   {invoice.status === "draft" ? (
                     <Button variant="brand" className="h-10 flex-1" onClick={send}>
-                      <SendIcon /> Send invoice
+                      <SendIcon /> {t("Send invoice")}
                     </Button>
                   ) : (
                     <Button variant="brand" className="h-10 flex-1" onClick={markPaid}>
-                      <CheckIcon /> Mark as paid
+                      <CheckIcon /> {t("Mark as paid")}
                     </Button>
                   )}
                 </>

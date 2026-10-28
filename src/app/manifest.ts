@@ -1,10 +1,13 @@
 import type { MetadataRoute } from "next";
 
+// Required for `output: "export"`: emit the manifest once at build time.
+export const dynamic = "force-static";
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Kargul Workspace",
+    name: "Kargul 工作台",
     short_name: "Kargul",
-    description: "Plan time off, track leave requests and manage your work calendar.",
+    description: "规划休假、追踪请假申请并管理你的工作日历。",
     start_url: "/time-off",
     display: "standalone",
     background_color: "#f8f8f8",

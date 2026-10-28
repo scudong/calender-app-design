@@ -35,6 +35,7 @@ import { formatTime } from "@/lib/dates";
 import { computeLeaveStats, formatDays } from "@/lib/leave";
 import type { Settings } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { openOverlay } from "@/stores/overlay-store";
@@ -58,10 +59,11 @@ function useSettings() {
 }
 
 export function SettingsPage() {
+  const t = useT();
   const [tab, setTab] = useState<string>("general");
   return (
     <PageRoot>
-      <PageHeader title="Settings" description="Changes are saved automatically" />
+      <PageHeader title={t("Settings")} description={t("Changes are saved automatically")} />
       {/* md+: vertical tab rail beside the panel. Phones: a sticky, horizontally scrolling tab bar above it. */}
       <Tabs
         value={tab}
@@ -91,7 +93,7 @@ export function SettingsPage() {
                 "[&_svg]:size-3.5! [&_svg]:text-icon",
               )}
             >
-              <Glyph /> {label}
+              <Glyph /> {t(label)}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -176,10 +178,25 @@ function Row({
 /* ------------------------------------------------------------------ general */
 
 function GeneralTab() {
+  const t = useT();
   const [settings, set] = useSettings();
   return (
-    <Panel title="General" description="How dates and times appear across your calendar.">
-      <Row title="Week starts on" description="First column in week and month views" htmlFor="st-week" stack>
+    <Panel title={t("General")} description={t("How dates and times appear across your calendar.")}>
+      <Row title={t("Language")} description={t("Interface language for the whole workspace")} htmlFor="st-language" stack>
+        <Select
+          value={settings.language ?? "zh"}
+          onValueChange={(v) => set("language", v as Settings["language"])}
+        >
+          <SelectTrigger id="st-language" className={cn("w-40", TOUCH_CONTROL)}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="zh">中文</SelectItem>
+            <SelectItem value="en">English</SelectItem>
+          </SelectContent>
+        </Select>
+      </Row>
+      <Row title={t("Week starts on")} description={t("First column in week and month views")} htmlFor="st-week" stack>
         <Select
           value={String(settings.weekStartsOn)}
           onValueChange={(v) => set("weekStartsOn", Number(v) as 0 | 1)}
@@ -188,23 +205,23 @@ function GeneralTab() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="0">Sunday</SelectItem>
-            <SelectItem value="1">Monday</SelectItem>
+            <SelectItem value="0">{t("Sunday")}</SelectItem>
+            <SelectItem value="1">{t("Monday")}</SelectItem>
           </SelectContent>
         </Select>
       </Row>
-      <Row title="Time format" description="Used for events, requests and time entries" htmlFor="st-time" stack>
+      <Row title={t("Time format")} description={t("Used for events, requests and time entries")} htmlFor="st-time" stack>
         <Select value={settings.timeFormat} onValueChange={(v) => set("timeFormat", v as Settings["timeFormat"])}>
           <SelectTrigger id="st-time" className={cn("w-40", TOUCH_CONTROL)}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="24h">24-hour · 14:30</SelectItem>
-            <SelectItem value="12h">12-hour · 2:30 PM</SelectItem>
+            <SelectItem value="24h">{t("24-hour · 14:30")}</SelectItem>
+            <SelectItem value="12h">{t("12-hour · 2:30 PM")}</SelectItem>
           </SelectContent>
         </Select>
       </Row>
-      <Row title="Calendar day starts at" description="Day and week views scroll to this hour" htmlFor="st-start" stack>
+      <Row title={t("Calendar day starts at")} description={t("Day and week views scroll to this hour")} htmlFor="st-start" stack>
         <Select value={String(settings.dayStartHour)} onValueChange={(v) => set("dayStartHour", Number(v))}>
           <SelectTrigger id="st-start" className={cn("w-40", TOUCH_CONTROL)}>
             <SelectValue />
@@ -218,7 +235,7 @@ function GeneralTab() {
           </SelectContent>
         </Select>
       </Row>
-      <Row title="Show weekends" description="Hide Saturday and Sunday to focus on the work week" htmlFor="st-weekends">
+      <Row title={t("Show weekends")} description={t("Hide Saturday and Sunday to focus on the work week")} htmlFor="st-weekends">
         <Switch id="st-weekends" checked={settings.showWeekends} onCheckedChange={(v) => set("showWeekends", v)} />
       </Row>
     </Panel>
@@ -242,6 +259,7 @@ function Stepper({
   onChange: (v: number) => void;
   label: string;
 }) {
+  const t = useT();
   // Local text only while typing; otherwise the store value is shown.
   const [text, setText] = useState<string | null>(null);
   const commit = (v: number) => onChange(Math.min(max, Math.max(min, Math.round(v))));
@@ -249,7 +267,7 @@ function Stepper({
 
   return (
     <div className="flex items-center gap-1 max-sm:w-full">
-      <Button size="icon" className="max-md:size-10" aria-label={`Decrease ${label}`} disabled={value <= min} onClick={() => commit(value - 1)}>
+      <Button size="icon" className="max-md:size-10" aria-label={t("Decrease {label}", { label })} disabled={value <= min} onClick={() => commit(value - 1)}>
         <MinusIcon className="text-icon" />
       </Button>
       <Input
@@ -259,10 +277,10 @@ function Stepper({
         value={text ?? String(value)}
         aria-invalid={invalid || undefined}
         onChange={(e) => {
-          const t = e.target.value.replace(/[^\d]/g, "");
-          setText(t);
-          const n = Number(t);
-          if (t !== "" && n >= min && n <= max) onChange(n);
+          const raw = e.target.value.replace(/[^\d]/g, "");
+          setText(raw);
+          const n = Number(raw);
+          if (raw !== "" && n >= min && n <= max) onChange(n);
         }}
         onBlur={() => setText(null)}
         onKeyDown={(e) => {
@@ -277,7 +295,7 @@ function Stepper({
           }
         }}
       />
-      <Button size="icon" className="max-md:size-10" aria-label={`Increase ${label}`} disabled={value >= max} onClick={() => commit(value + 1)}>
+      <Button size="icon" className="max-md:size-10" aria-label={t("Increase {label}", { label })} disabled={value >= max} onClick={() => commit(value + 1)}>
         <PlusIcon className="text-icon" />
       </Button>
     </div>
@@ -285,6 +303,7 @@ function Stepper({
 }
 
 function TimeOffTab() {
+  const t = useT();
   const [settings, set] = useSettings();
   const today = useToday();
   const requests = useAppStore((s) => s.requests);
@@ -294,21 +313,21 @@ function TimeOffTab() {
 
   return (
     <div className="grid gap-4">
-      <Panel title="Time off" description="Your yearly allowance. Balances everywhere update instantly.">
-        <Row title="Contract days" description="Paid days off per calendar year (0–60)" htmlFor="st-contract" stack>
+      <Panel title={t("Time off")} description={t("Your yearly allowance. Balances everywhere update instantly.")}>
+        <Row title={t("Contract days")} description={t("Paid days off per calendar year (0–60)")} htmlFor="st-contract" stack>
           <Stepper
             id="st-contract"
-            label="contract days"
+            label={t("contract days")}
             value={settings.contractDays}
             min={0}
             max={60}
             onChange={(v) => set("contractDays", v)}
           />
         </Row>
-        <Row title="Carryover days" description="Unused days brought over from last year (0–30)" htmlFor="st-carryover" stack>
+        <Row title={t("Carryover days")} description={t("Unused days brought over from last year (0–30)")} htmlFor="st-carryover" stack>
           <Stepper
             id="st-carryover"
-            label="carryover days"
+            label={t("carryover days")}
             value={settings.carryoverDays}
             min={0}
             max={30}
@@ -319,18 +338,24 @@ function TimeOffTab() {
       <div className="flex items-center gap-4 rounded-xl border border-hairline bg-app px-4 py-3.5 max-sm:flex-wrap max-sm:gap-3">
         <div className="grid flex-1 gap-1.5 max-sm:basis-full">
           <span className="t-14 text-fg">
-            {formatDays(total)} days this year · {formatDays(stats.available)} available
+            {t("{days} days this year · {available} available", {
+              days: formatDays(total),
+              available: formatDays(stats.available),
+            })}
           </span>
           <span className="t-12 text-fg-2">
-            {formatDays(stats.taken + stats.upcoming)} approved · {formatDays(stats.pendingDays)} pending ·{" "}
-            {stats.holidays} public holidays never count
+            {t("{approved} approved · {pending} pending · {holidays} public holidays never count", {
+              approved: formatDays(stats.taken + stats.upcoming),
+              pending: formatDays(stats.pendingDays),
+              holidays: stats.holidays,
+            })}
           </span>
         </div>
         <Button className="max-md:h-10 max-sm:flex-1" onClick={() => openOverlay({ kind: "holidays" })}>
-          Holidays
+          {t("Holidays")}
         </Button>
         <Button className="max-md:h-10 max-sm:flex-1" onClick={() => openOverlay({ kind: "policy" })}>
-          View policy
+          {t("View policy")}
         </Button>
       </div>
     </div>
@@ -340,21 +365,22 @@ function TimeOffTab() {
 /* ------------------------------------------------------------------ notifications */
 
 function NotificationsTab() {
+  const t = useT();
   const [settings, set] = useSettings();
   const email = useAppStore((s) => s.profile.email);
   return (
-    <Panel title="Notifications" description="Choose how you hear about approvals and reminders.">
-      <Row title="Email" description={`Approvals, declines and reminders to ${email}`} htmlFor="st-email">
+    <Panel title={t("Notifications")} description={t("Choose how you hear about approvals and reminders.")}>
+      <Row title={t("Email")} description={t("Approvals, declines and reminders to {email}", { email })} htmlFor="st-email">
         <Switch
           id="st-email"
           checked={settings.emailNotifications}
           onCheckedChange={(v) => set("emailNotifications", v)}
         />
       </Row>
-      <Row title="Push" description="Instant alerts in this browser" htmlFor="st-push">
+      <Row title={t("Push")} description={t("Instant alerts in this browser")} htmlFor="st-push">
         <Switch id="st-push" checked={settings.pushNotifications} onCheckedChange={(v) => set("pushNotifications", v)} />
       </Row>
-      <Row title="Weekly digest" description="A Monday summary of your week ahead and leave balance" htmlFor="st-digest">
+      <Row title={t("Weekly digest")} description={t("A Monday summary of your week ahead and leave balance")} htmlFor="st-digest">
         <Switch id="st-digest" checked={settings.weeklyDigest} onCheckedChange={(v) => set("weeklyDigest", v)} />
       </Row>
     </Panel>
@@ -411,6 +437,7 @@ function ThemePreview({ theme }: { theme: "light" | "dark" }) {
 }
 
 function AppearanceTab() {
+  const t = useT();
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const current = mounted ? (resolvedTheme === "dark" ? "dark" : "light") : null;
@@ -418,27 +445,27 @@ function AppearanceTab() {
   return (
     <div className="grid gap-4">
       <div className="grid gap-2 px-1">
-        <h3 className="t-16 text-fg">Appearance</h3>
-        <p className="t-14 text-fg-2">Pick a theme for this browser. You can also toggle it from the sidebar.</p>
+        <h3 className="t-16 text-fg">{t("Appearance")}</h3>
+        <p className="t-14 text-fg-2">{t("Pick a theme for this browser. You can also toggle it from the sidebar.")}</p>
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4" role="radiogroup" aria-label="Theme">
-        {(["light", "dark"] as const).map((t) => {
-          const active = current === t;
+      <div className="grid grid-cols-2 gap-3 sm:gap-4" role="radiogroup" aria-label={t("Theme")}>
+        {(["light", "dark"] as const).map((mode) => {
+          const active = current === mode;
           return (
             <button
-              key={t}
+              key={mode}
               type="button"
               role="radio"
               aria-checked={active}
-              onClick={() => setTheme(t)}
+              onClick={() => setTheme(mode)}
               className={cn(
                 "press grid gap-3 rounded-xl border bg-surface p-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-brand/40",
                 active ? "border-brand ring-1 ring-brand" : "border-hairline hover-fine:border-segment",
               )}
             >
-              <ThemePreview theme={t} />
+              <ThemePreview theme={mode} />
               <span className="flex items-center gap-2 px-0.5">
-                <span className="t-14 flex-1 text-fg">{t === "light" ? "Light" : "Dark"}</span>
+                <span className="t-14 flex-1 text-fg">{mode === "light" ? t("Light") : t("Dark")}</span>
                 <span
                   className={cn(
                     "flex size-4 items-center justify-center rounded-full border transition-colors duration-150",
@@ -459,9 +486,18 @@ function AppearanceTab() {
 /* ------------------------------------------------------------------ data */
 
 function DataTab() {
+  const t = useT();
   const today = useToday();
-  const counts = useAppStore(selectCountsLabel);
+  const counts = useAppStore(selectCountsSummary);
   const resetDemoData = useAppStore((s) => s.resetDemoData);
+  const countsLabel = counts
+    .split(",")
+    .map((raw, i) => {
+      const [one, many] = EXPORT_UNITS[i];
+      const n = Number(raw);
+      return t(n === 1 ? `{n} ${one}` : `{n} ${many}`, { n });
+    })
+    .join(", ");
 
   const exportJson = () => {
     const state = useAppStore.getState();
@@ -478,39 +514,40 @@ function DataTab() {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast.success("Export ready", { description: `workspace-export-${today}.json · ${formatBytes(blob.size)}` });
+    toast.success(t("Export ready"), { description: `workspace-export-${today}.json · ${formatBytes(blob.size)}` });
   };
 
   return (
-    <Panel title="Data" description="Everything lives in this browser’s local storage.">
-      <Row title="Export data" description={counts} stack>
+    <Panel title={t("Data")} description={t("Everything lives in this browser’s local storage.")}>
+      <Row title={t("Export data")} description={t("Download {counts} as JSON", { counts: countsLabel })} stack>
         <Button onClick={exportJson} className={TOUCH_CONTROL}>
-          <DownloadIcon className="text-icon" /> Export JSON
+          <DownloadIcon className="text-icon" /> {t("Export JSON")}
         </Button>
       </Row>
       <Row
-        title="Reset demo data"
-        description="Restore the original sample events, requests and documents. This replaces your changes."
+        title={t("Reset demo data")}
+        description={t("Restore the original sample events, requests and documents. This replaces your changes.")}
         stack
       >
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" className={TOUCH_CONTROL}>
-              <RotateCcwIcon /> Reset
+              <RotateCcwIcon /> {t("Reset")}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle className="t-16">Reset all demo data?</AlertDialogTitle>
+              <AlertDialogTitle className="t-16">{t("Reset all demo data?")}</AlertDialogTitle>
               <AlertDialogDescription className="t-14 leading-[1.4]">
-                Your events, requests, documents, profile and settings will be replaced with the original sample data. Export
-                first if you want to keep a copy.
+                {t(
+                  "Your events, requests, documents, profile and settings will be replaced with the original sample data. Export first if you want to keep a copy.",
+                )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="max-sm:h-10">Cancel</AlertDialogCancel>
+              <AlertDialogCancel className="max-sm:h-10">{t("Cancel")}</AlertDialogCancel>
               <AlertDialogAction variant="destructive" className="max-sm:h-10" onClick={() => resetDemoData()}>
-                Reset data
+                {t("Reset data")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -526,14 +563,16 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/** Selector returning a primitive string, so it is stable across renders. */
-function selectCountsLabel(s: ReturnType<typeof useAppStore.getState>) {
-  const parts = [
-    [s.events.length, "event", "events"],
-    [s.requests.length, "request", "requests"],
-    [s.documents.length, "document", "documents"],
-    [s.timeEntries.length, "time entry", "time entries"],
-    [s.invoices.length, "invoice", "invoices"],
-  ] as const;
-  return `Download ${parts.map(([n, one, many]) => `${n} ${n === 1 ? one : many}`).join(", ")} as JSON`;
+/** English plural units for the export summary, in store order. */
+const EXPORT_UNITS = [
+  ["event", "events"],
+  ["request", "requests"],
+  ["document", "documents"],
+  ["time entry", "time entries"],
+  ["invoice", "invoices"],
+] as const;
+
+/** Selector returning the entity counts as one primitive string, so it stays stable across renders. */
+function selectCountsSummary(s: ReturnType<typeof useAppStore.getState>) {
+  return [s.events.length, s.requests.length, s.documents.length, s.timeEntries.length, s.invoices.length].join(",");
 }

@@ -5,6 +5,7 @@ import { PlayIcon, SquareIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useAppStore } from "@/stores/app-store";
 import { formatClock, formatHours } from "./shared";
 
@@ -29,6 +30,7 @@ function useElapsed(running: boolean, startedAt: number | null): number {
 }
 
 export function TimerCard({ projects, todayMinutes }: { projects: string[]; todayMinutes: number }) {
+  const t = useT();
   const timer = useAppStore((s) => s.timer);
   const startTimer = useAppStore((s) => s.startTimer);
   const stopTimer = useAppStore((s) => s.stopTimer);
@@ -38,7 +40,7 @@ export function TimerCard({ projects, todayMinutes }: { projects: string[]; toda
 
   return (
     <section
-      aria-label="Timer"
+      aria-label={t("Timer")}
       className={cn(
         "flex items-center gap-3 rounded-xl border bg-surface p-3 transition-[border-color] duration-200 ease-(--ease-out)",
         timer.running ? "border-brand/40" : "border-hairline",
@@ -54,16 +56,16 @@ export function TimerCard({ projects, todayMinutes }: { projects: string[]; toda
         }}
       >
         <Input
-          aria-label="Project"
-          placeholder="Project"
+          aria-label={t("Project")}
+          placeholder={t("Project")}
           list="tt-projects"
           className="h-10 text-[16px] md:h-[30px] md:w-52 md:text-[14px]"
           value={timer.project}
           onChange={(e) => updateTimer({ project: e.target.value })}
         />
         <Input
-          aria-label="Task"
-          placeholder="What are you working on?"
+          aria-label={t("Task")}
+          placeholder={t("What are you working on?")}
           className="h-10 min-w-0 text-[16px] md:h-[30px] md:flex-1 md:text-[14px]"
           value={timer.task}
           onChange={(e) => updateTimer({ task: e.target.value })}
@@ -98,6 +100,7 @@ function TimerControls({
   variant?: "card" | "bar";
   className?: string;
 }) {
+  const t = useT();
   const timer = useAppStore((s) => s.timer);
   const elapsed = useElapsed(timer.running, timer.startedAt);
   const bar = variant === "bar";
@@ -120,20 +123,20 @@ function TimerControls({
           {timer.running ? (
             <>
               <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-danger" aria-hidden />
-              <span className="truncate">{bar && label ? label : "Recording"}</span>
+              <span className="truncate">{bar && label ? label : t("Recording")}</span>
             </>
           ) : (
-            <>Today · {formatHours(todayMinutes)}</>
+            <>{t("Today · {hours}", { hours: formatHours(todayMinutes) })}</>
           )}
         </span>
       </div>
       {timer.running ? (
         <Button type="submit" form={FORM_ID} variant="destructive" className={bar ? "h-10 w-[104px]" : "w-[84px]"}>
-          <SquareIcon className="fill-current" /> Stop
+          <SquareIcon className="fill-current" /> {t("Stop")}
         </Button>
       ) : (
         <Button type="submit" form={FORM_ID} variant="brand" className={bar ? "h-10 w-[104px]" : "w-[84px]"}>
-          <PlayIcon className="fill-current" /> Start
+          <PlayIcon className="fill-current" /> {t("Start")}
         </Button>
       )}
     </div>

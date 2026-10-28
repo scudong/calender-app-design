@@ -2,9 +2,11 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const alt = "Kargul — calendar for your team";
+export const alt = "Kargul — 团队的日历";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+// Required for `output: "export"`: render the image once at build time.
+export const dynamic = "force-static";
 
 // Rendered once at build time from vendored assets (no network at build).
 // Paths are literal so only assets/og is traced into the output.
@@ -55,7 +57,7 @@ export default function OpengraphImage() {
           Calendar for your team
         </div>
         <div style={{ marginTop: 16, fontSize: 26, color: "#757575", letterSpacing: -0.5 }}>
-          Plan leave, track requests and balances — in one calm workspace.
+          Plan time off, track requests and balances — in one calm workspace.
         </div>
 
         <div

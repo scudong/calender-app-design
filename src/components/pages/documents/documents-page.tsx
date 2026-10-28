@@ -50,10 +50,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { formatLong, formatShort } from "@/lib/dates";
 import type { DocCategory, DocumentFile } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-i18n";
 import { useIsMobile } from "@/hooks/use-media-query";
 import { useToday } from "@/hooks/use-today";
 import { useAppStore } from "@/stores/app-store";
 import { EmptyState, PageHeader, PageRoot } from "@/components/pages/shared/page-chrome";
+
+type TFn = ReturnType<typeof useT>;
 
 const CATEGORIES: DocCategory[] = ["Contract", "Payslip", "Policy", "Medical", "Tax", "Other"];
 const MAX_INLINE_BYTES = 1.5 * 1024 * 1024;
@@ -108,9 +111,9 @@ function readAsDataUrl(file: File) {
   });
 }
 
-function downloadDoc(doc: DocumentFile) {
+function downloadDoc(doc: DocumentFile, t: TFn) {
   if (!doc.dataUrl) {
-    toast("This is a demo file", { description: `“${doc.name}” has no content attached — upload your own to download it.` });
+    toast(t("This is a demo file"), { description: t("“{name}” has no content attached — upload your own to download it.", { name: doc.name }) });
     return;
   }
   const a = document.createElement("a");
@@ -134,6 +137,7 @@ function DocGlyph({ name, className }: { name: string; className?: string }) {
 }
 
 function CategoryBadge({ category }: { category: DocCategory }) {
+  const t = useT();
   const c = CATEGORY_COLOR[category];
   return (
     <span
@@ -144,12 +148,13 @@ function CategoryBadge({ category }: { category: DocCategory }) {
           : { background: "var(--status-neutral-tint)", color: "var(--status-neutral)" }
       }
     >
-      {category}
+      {t(category)}
     </span>
   );
 }
 
 export function DocumentsPage() {
+  const t = useT();
   const today = useToday();
   const documents = useAppStore((s) => s.documents);
   const addDocument = useAppStore((s) => s.addDocument);
@@ -206,14 +211,17 @@ export function DocumentsPage() {
       if (!dataUrl) metadataOnly += 1;
       addDocument({ name: file.name, category, size: file.size, dataUrl, starred: false });
     }
-    toast.success(list.length === 1 ? "Document uploaded" : `${list.length} documents uploaded`, {
+    toast.success(list.length === 1 ? t("Document uploaded") : t("{n} documents uploaded", { n: list.length }), {
       description:
-        list.length === 1 ? `${list[0].name} · ${guessCategory(list[0].name, fallback)}` : "Filed by name — move them any time.",
+        list.length === 1
+          ? t("{name} · {category}", { name: list[0].name, category: t(guessCategory(list[0].name, fallback)) })
+          : t("Filed by name — move them any time."),
     });
     if (metadataOnly) {
-      toast(metadataOnly === 1 ? "Large file saved as details only" : `${metadataOnly} large files saved as details only`, {
-        description: "Files over 1.5 MB aren’t stored in this browser demo, so they can’t be downloaded.",
-      });
+      toast(
+        metadataOnly === 1 ? t("Large file saved as details only") : t("{n} large files saved as details only", { n: metadataOnly }),
+        { description: t("Files over 1.5 MB aren’t stored in this browser demo, so they can’t be downloaded.") },
+      );
     }
     // Make sure the new uploads are visible.
     setQuery("");
@@ -226,11 +234,11 @@ export function DocumentsPage() {
   const filterGroups: FilterGroup[] = [
     {
       id: "show",
-      label: "Show",
+      label: t("Show"),
       type: "single",
       options: (["all", "starred", ...CATEGORIES] as Filter[]).map((f) => ({
         value: f,
-        label: `${f === "all" ? "All" : f === "starred" ? "Starred" : f} · ${counts[f] ?? 0}`,
+        label: `${f === "all" ? t("All") : f === "starred" ? t("Starred") : t(f)} · ${counts[f] ?? 0}`,
         adornment: f === "starred" ? <StarIcon className="size-3.5 text-warning" /> : undefined,
       })),
       value: filter,
@@ -238,9 +246,9 @@ export function DocumentsPage() {
     },
     {
       id: "sort",
-      label: "Sort by",
+      label: t("Sort by"),
       type: "single",
-      options: SORTS,
+      options: SORTS.map((o) => ({ ...o, label: t(o.label) })),
       value: sort,
       onChange: (v) => setSort(v as Sort),
     },
@@ -281,11 +289,11 @@ export function DocumentsPage() {
         }}
       />
       <PageHeader
-        title="Documents"
-        description={`${documents.length} ${documents.length === 1 ? "file" : "files"} · ${formatSize(totalSize)}`}
+        title={t("Documents")}
+        description={`${t(documents.length === 1 ? "{n} file" : "{n} files", { n: documents.length })} · ${formatSize(totalSize)}`}
         actions={
           <Button variant="brand" onClick={() => fileInput.current?.click()}>
-            <UploadIcon /> Upload
+            <UploadIcon /> {t("Upload")}
           </Button>
         }
       />
@@ -296,7 +304,7 @@ export function DocumentsPage() {
           <TabsList className="h-[30px]">
             {(["all", "starred", ...CATEGORIES] as Filter[]).map((f) => (
               <TabsTrigger key={f} value={f} className="t-14 salt gap-1.5 px-2 text-[14px] data-active:text-fg">
-                {f === "all" ? "All" : f === "starred" ? <StarIcon className="size-3.5" aria-label="Starred" /> : f}
+                {f === "all" ? t("All") : f === "starred" ? <StarIcon className="size-3.5" aria-label={t("Starred")} /> : t(f)}
                 {counts[f] ? <span className="t-12 text-placeholder tabular-nums">{counts[f]}</span> : null}
               </TabsTrigger>
             ))}
@@ -309,19 +317,19 @@ export function DocumentsPage() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={isMobile ? "Search" : "Search documents"}
-              aria-label="Search documents"
+              placeholder={isMobile ? t("Search") : t("Search documents")}
+              aria-label={t("Search documents")}
               className="h-[30px] w-52 pl-8 max-md:h-10 max-md:w-full max-md:text-[16px]"
             />
           </div>
           <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
-            <SelectTrigger className="h-[30px]! w-[124px] max-md:hidden" aria-label="Sort by">
+            <SelectTrigger className="h-[30px]! w-[124px] max-md:hidden" aria-label={t("Sort by")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {SORTS.map((o) => (
                 <SelectItem key={o.value} value={o.value}>
-                  {o.label}
+                  {t(o.label)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -337,11 +345,11 @@ export function DocumentsPage() {
               className="h-10"
             />
           </div>
-          <div className="flex items-center rounded-lg border border-control p-0.5" role="group" aria-label="Layout">
+          <div className="flex items-center rounded-lg border border-control p-0.5" role="group" aria-label={t("Layout")}>
             {(
               [
-                ["list", ListIcon, "List view"],
-                ["grid", LayoutGridIcon, "Grid view"],
+                ["list", ListIcon, t("List view")],
+                ["grid", LayoutGridIcon, t("Grid view")],
               ] as const
             ).map(([v, Glyph, label]) => (
               <Tooltip key={v}>
@@ -370,11 +378,11 @@ export function DocumentsPage() {
         <EmptyState
           className="flex-1"
           icon={<FolderOpenIcon />}
-          title="No documents yet"
-          hint="Upload contracts, payslips or certificates — or drop files anywhere on this page."
+          title={t("No documents yet")}
+          hint={t("Upload contracts, payslips or certificates — or drop files anywhere on this page.")}
           action={
             <Button variant="brand" onClick={() => fileInput.current?.click()}>
-              <UploadIcon /> Upload files
+              <UploadIcon /> {t("Upload files")}
             </Button>
           }
         />
@@ -382,11 +390,11 @@ export function DocumentsPage() {
         <EmptyState
           className="flex-1"
           icon={<SearchXIcon />}
-          title={filter === "starred" && !query ? "No starred documents" : "No documents match"}
+          title={filter === "starred" && !query ? t("No starred documents") : t("No documents match")}
           hint={
             filter === "starred" && !query
-              ? "Star the files you open often to keep them one click away."
-              : "Try a different search or category."
+              ? t("Star the files you open often to keep them one click away.")
+              : t("Try a different search or category.")
           }
           action={
             hasFilters ? (
@@ -396,7 +404,7 @@ export function DocumentsPage() {
                   setFilter("all");
                 }}
               >
-                Clear filters
+                {t("Clear filters")}
               </Button>
             ) : null
           }
@@ -413,8 +421,8 @@ export function DocumentsPage() {
       {dragging ? (
         <div className="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand bg-surface/90 duration-150 ease-(--ease-out) animate-in fade-in-0">
           <UploadIcon className="size-5 text-brand" />
-          <p className="t-14 text-fg">Drop to upload</p>
-          <p className="t-12 text-fg-2">Files up to 1.5 MB are stored in this browser</p>
+          <p className="t-14 text-fg">{t("Drop to upload")}</p>
+          <p className="t-12 text-fg-2">{t("Files up to 1.5 MB are stored in this browser")}</p>
         </div>
       ) : null}
 
@@ -425,19 +433,20 @@ export function DocumentsPage() {
 
 /* ------------------------------------------------------------------ row pieces */
 
-function uploadedLabel(iso: string, today: string) {
+function uploadedLabel(iso: string, today: string, t: TFn) {
   const day = iso.slice(0, 10);
-  if (day === today) return "Today";
+  if (day === today) return t("Today");
   return day.slice(0, 4) === today.slice(0, 4) ? formatShort(day) : formatLong(day);
 }
 
 function StarButton({ doc, className }: { doc: DocumentFile; className?: string }) {
+  const t = useT();
   const updateDocument = useAppStore((s) => s.updateDocument);
   return (
     <Button
       variant="ghost"
       size="icon-sm"
-      aria-label={doc.starred ? `Unstar ${doc.name}` : `Star ${doc.name}`}
+      aria-label={doc.starred ? t("Unstar {name}", { name: doc.name }) : t("Star {name}", { name: doc.name })}
       aria-pressed={!!doc.starred}
       onClick={(e) => {
         e.stopPropagation();
@@ -462,6 +471,7 @@ function RowMenu({
   onRename: (d: DocumentFile) => void;
   className?: string;
 }) {
+  const t = useT();
   const updateDocument = useAppStore((s) => s.updateDocument);
   const deleteDocument = useAppStore((s) => s.deleteDocument);
   return (
@@ -470,7 +480,7 @@ function RowMenu({
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label={`More actions for ${doc.name}`}
+          aria-label={t("More actions for {name}", { name: doc.name })}
           onClick={(e) => e.stopPropagation()}
           className={className}
         >
@@ -478,27 +488,27 @@ function RowMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenuItem className={MENU_ITEM} onSelect={() => downloadDoc(doc)}>
-          <DownloadIcon /> Download
+        <DropdownMenuItem className={MENU_ITEM} onSelect={() => downloadDoc(doc, t)}>
+          <DownloadIcon /> {t("Download")}
         </DropdownMenuItem>
         <DropdownMenuItem className={MENU_ITEM} onSelect={() => onRename(doc)}>
-          <PencilIcon /> Rename
+          <PencilIcon /> {t("Rename")}
         </DropdownMenuItem>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className={cn("t-14 salt gap-1.5 [&_svg]:text-icon", MENU_ITEM)}>
-            <FolderInputIcon className="size-3.5" /> Move to
+            <FolderInputIcon className="size-3.5" /> {t("Move to")}
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-40">
             <DropdownMenuRadioGroup
               value={doc.category}
               onValueChange={(v) => {
                 updateDocument(doc.id, { category: v as DocCategory });
-                toast.success(`Moved to ${v}`, { description: doc.name });
+                toast.success(t("Moved to {category}", { category: v }), { description: doc.name });
               }}
             >
               {CATEGORIES.map((c) => (
                 <DropdownMenuRadioItem key={c} value={c} className={cn("t-14", MENU_ITEM)}>
-                  {c}
+                  {t(c)}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -506,7 +516,7 @@ function RowMenu({
         </DropdownMenuSub>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" className={MENU_ITEM} onSelect={() => deleteDocument(doc.id)}>
-          <Trash2Icon /> Delete
+          <Trash2Icon /> {t("Delete")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -516,16 +526,17 @@ function RowMenu({
 type ViewProps = { docs: DocumentFile[]; today: string; onRename: (d: DocumentFile) => void };
 
 function DocumentTable({ docs, today, onRename }: ViewProps) {
+  const t = useT();
   return (
     <table className="w-full table-fixed border-collapse max-md:hidden">
       <thead>
         <tr className="h-10 bg-app">
-          <th className="t-14 pl-4 text-left font-medium text-fg-2">Name</th>
-          <th className="t-14 w-[130px] px-3 text-left font-medium text-fg-2">Category</th>
-          <th className="t-14 w-[96px] px-3 text-right font-medium text-fg-2">Size</th>
-          <th className="t-14 w-[140px] px-3 text-left font-medium text-fg-2">Uploaded</th>
+          <th className="t-14 pl-4 text-left font-medium text-fg-2">{t("Name")}</th>
+          <th className="t-14 w-[130px] px-3 text-left font-medium text-fg-2">{t("Category")}</th>
+          <th className="t-14 w-[96px] px-3 text-right font-medium text-fg-2">{t("Size")}</th>
+          <th className="t-14 w-[140px] px-3 text-left font-medium text-fg-2">{t("Uploaded")}</th>
           <th className="w-[112px] pr-4">
-            <span className="sr-only">Actions</span>
+            <span className="sr-only">{t("Actions")}</span>
           </th>
         </tr>
       </thead>
@@ -533,7 +544,7 @@ function DocumentTable({ docs, today, onRename }: ViewProps) {
         {docs.map((d) => (
           <tr
             key={d.id}
-            onDoubleClick={() => downloadDoc(d)}
+            onDoubleClick={() => downloadDoc(d, t)}
             className="group h-14 border-b border-subtle transition-colors duration-150 hover-fine:bg-hover"
           >
             <td className="pl-4">
@@ -544,24 +555,31 @@ function DocumentTable({ docs, today, onRename }: ViewProps) {
                 <span className="t-14 min-w-0 truncate text-table" title={d.name}>
                   {d.name}
                 </span>
-                {d.starred ? <StarIcon className="size-3 shrink-0 fill-current text-warning" aria-label="Starred" /> : null}
+                {d.starred ? (
+                  <StarIcon className="size-3 shrink-0 fill-current text-warning" aria-label={t("Starred")} />
+                ) : null}
               </div>
             </td>
             <td className="px-3">
               <CategoryBadge category={d.category} />
             </td>
             <td className="t-14 px-3 text-right text-table tabular-nums">{formatSize(d.size)}</td>
-            <td className="t-14 px-3 text-table">{uploadedLabel(d.uploadedAt, today)}</td>
+            <td className="t-14 px-3 text-table">{uploadedLabel(d.uploadedAt, today, t)}</td>
             <td className="pr-4">
               <div className="flex items-center justify-end gap-0.5">
                 <StarButton doc={d} />
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon-sm" aria-label={`Download ${d.name}`} onClick={() => downloadDoc(d)}>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t("Download {name}", { name: d.name })}
+                      onClick={() => downloadDoc(d, t)}
+                    >
                       <DownloadIcon />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>{d.dataUrl ? "Download" : "Demo file"}</TooltipContent>
+                  <TooltipContent>{d.dataUrl ? t("Download") : t("Demo file")}</TooltipContent>
                 </Tooltip>
                 <RowMenu doc={d} onRename={onRename} />
               </div>
@@ -575,13 +593,14 @@ function DocumentTable({ docs, today, onRename }: ViewProps) {
 
 /** Phones: the table becomes a list — tap a row to open the file, star and menu stay visible. */
 function DocumentList({ docs, today, onRename }: ViewProps) {
+  const t = useT();
   return (
     <ul className="divide-y divide-subtle border-b border-subtle md:hidden">
       {docs.map((d) => (
         <li key={d.id} className="flex items-center pr-2">
           <button
             type="button"
-            onClick={() => downloadDoc(d)}
+            onClick={() => downloadDoc(d, t)}
             className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 text-left outline-none transition-colors duration-150 focus-visible:bg-hover active:bg-hover"
           >
             <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-app text-icon">
@@ -592,7 +611,7 @@ function DocumentList({ docs, today, onRename }: ViewProps) {
               <span className="flex min-w-0 items-center gap-2">
                 <CategoryBadge category={d.category} />
                 <span className="t-12 truncate text-fg-2">
-                  {formatSize(d.size)} · {uploadedLabel(d.uploadedAt, today)}
+                  {formatSize(d.size)} · {uploadedLabel(d.uploadedAt, today, t)}
                 </span>
               </span>
             </span>
@@ -606,6 +625,7 @@ function DocumentList({ docs, today, onRename }: ViewProps) {
 }
 
 function DocumentGrid({ docs, today, onRename }: ViewProps) {
+  const t = useT();
   return (
     <ul className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
       {docs.map((d) => (
@@ -615,9 +635,9 @@ function DocumentGrid({ docs, today, onRename }: ViewProps) {
         >
           <button
             type="button"
-            onClick={() => downloadDoc(d)}
+            onClick={() => downloadDoc(d, t)}
             className="flex h-24 items-center justify-center bg-app text-icon outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-inset"
-            aria-label={`Download ${d.name}`}
+            aria-label={t("Download {name}", { name: d.name })}
           >
             <DocGlyph name={d.name} className="size-7" />
           </button>
@@ -627,7 +647,7 @@ function DocumentGrid({ docs, today, onRename }: ViewProps) {
                 {d.name}
               </span>
               <span className="t-12 truncate text-fg-2">
-                {formatSize(d.size)} · {uploadedLabel(d.uploadedAt, today)}
+                {formatSize(d.size)} · {uploadedLabel(d.uploadedAt, today, t)}
               </span>
               <CategoryBadge category={d.category} />
             </div>
@@ -655,11 +675,12 @@ function RenameDialog({ doc, onClose }: { doc: DocumentFile | null; onClose: () 
 }
 
 function RenameForm({ doc, onDone }: { doc: DocumentFile; onDone: () => void }) {
+  const t = useT();
   const updateDocument = useAppStore((s) => s.updateDocument);
   const [base, ext] = splitName(doc.name);
   const [value, setValue] = useState(base);
   const trimmed = value.trim();
-  const error = !trimmed ? "Give the file a name." : /[\\/:*?"<>|]/.test(trimmed) ? "Avoid \\ / : * ? \" < > |" : null;
+  const error = !trimmed ? t("Give the file a name.") : /[\\/:*?"<>|]/.test(trimmed) ? t("Avoid \\ / : * ? \" < > |") : null;
 
   return (
     <form
@@ -670,16 +691,16 @@ function RenameForm({ doc, onDone }: { doc: DocumentFile; onDone: () => void }) 
         const name = trimmed + ext;
         if (name !== doc.name) {
           updateDocument(doc.id, { name });
-          toast.success("Document renamed", { description: name });
+          toast.success(t("Document renamed"), { description: name });
         }
         onDone();
       }}
     >
       <DialogHeader className="gap-1.5">
-        <DialogTitle className="t-16">Rename document</DialogTitle>
-        <DialogDescription className="t-14">The file type stays the same.</DialogDescription>
+        <DialogTitle className="t-16">{t("Rename document")}</DialogTitle>
+        <DialogDescription className="t-14">{t("The file type stays the same.")}</DialogDescription>
       </DialogHeader>
-      <Field label="Name" htmlFor="doc-name" error={value !== base ? error : null}>
+      <Field label={t("Name")} htmlFor="doc-name" error={value !== base ? error : null}>
         <div className="flex items-center gap-2">
           <Input
             id="doc-name"
@@ -696,10 +717,10 @@ function RenameForm({ doc, onDone }: { doc: DocumentFile; onDone: () => void }) 
       {/* On phones the sheet pads for the home indicator; the footer absorbs that padding. */}
       <DialogFooter className="-mx-5 -mb-5 bg-app px-5 py-3 max-sm:mb-[calc(-1*max(1.25rem,env(safe-area-inset-bottom)))] max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <Button type="button" onClick={onDone} className="max-sm:h-10">
-          Cancel
+          {t("Cancel")}
         </Button>
         <Button type="submit" variant="brand" disabled={!!error} className="max-sm:h-10">
-          Rename
+          {t("Rename")}
         </Button>
       </DialogFooter>
     </form>

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { formatShort, rangeKeys } from "@/lib/dates";
+import { t, translateData, type Lang } from "@/lib/i18n";
 import { durationLabel, LEAVE_COLORS, WORKDAY_MINUTES, workingDays } from "@/lib/leave";
 import { createSeed, STATE_VERSION } from "@/lib/seed";
 import type {
@@ -133,12 +134,42 @@ const safeLocalStorage = {
     } catch {
       if (warnedQuota) return;
       warnedQuota = true;
-      toast.error("Browser storage is full", {
-        description: "Your latest changes won't survive a reload. Remove some uploaded documents to free space.",
+      toast.error(t("Browser storage is full"), {
+        description: t("Your latest changes won't survive a reload. Remove some uploaded documents to free space."),
       });
     }
   },
 };
+
+/** Demo data is authored in English; this returns a copy for the given UI language. */
+function seedFor(lang: Lang) {
+  return translateData(createSeed(), "en", lang);
+}
+
+/** State slices that hold user-visible demo content (enum values stay English). */
+const DATA_KEYS = [
+  "workspaces",
+  "events",
+  "requests",
+  "holidays",
+  "profile",
+  "notifications",
+  "documents",
+  "timeEntries",
+  "timer",
+  "invoices",
+  "withdrawalMethods",
+  "benefits",
+] as const;
+
+function dataSlice(state: AppState): Partial<AppState> {
+  const out: Record<string, unknown> = {};
+  for (const key of DATA_KEYS) out[key] = state[key];
+  return out as Partial<AppState>;
+}
+
+/** The seed in the language it declares (Chinese by default). */
+const INITIAL_STATE = seedFor(createSeed().settings.language);
 
 const whenLabel = (from: string, to: string) =>
   from === to ? formatShort(from) : `${formatShort(from)} – ${formatShort(to)}`;
@@ -233,14 +264,14 @@ export const useAppStore = create<AppStore>()(
       }) as typeof rawSet;
 
       return {
-      ...createSeed(),
+      ...INITIAL_STATE,
 
       // ------------------------------------------------------------ workspace
       switchWorkspace: (id) => set({ workspaceId: id }),
       addWorkspace: (name) => {
         const ws = { id: uid("ws"), name };
         set((s) => ({ workspaces: [...s.workspaces, ws], workspaceId: ws.id }));
-        toast.success(`Switched to ${name}`);
+        toast.success(t("Switched to {name}", { name }));
       },
 
       // ------------------------------------------------------------ events
@@ -258,9 +289,9 @@ export const useAppStore = create<AppStore>()(
         const removed = get().events.find((e) => e.id === id);
         if (!removed) return;
         set((s) => ({ events: s.events.filter((e) => e.id !== id) }));
-        toast("Event deleted", {
+        toast(t("Event deleted"), {
           description: removed.title,
-          action: { label: "Undo", onClick: () => set((s) => ({ events: [...s.events, removed] })) },
+          action: { label: t("Undo"), onClick: () => set((s) => ({ events: [...s.events, removed] })) },
         });
       },
       duplicateEvent: (id) => {
@@ -268,7 +299,7 @@ export const useAppStore = create<AppStore>()(
         if (!ev) return;
         const copy = { ...ev, id: uid("ev"), title: `${ev.title} (copy)`, requestId: undefined };
         set((s) => ({ events: [...s.events, copy] }));
-        toast.success("Event duplicated", { description: copy.title });
+        toast.success(t("Event duplicated"), { description: copy.title });
       },
 
       // ------------------------------------------------------------ leave
@@ -302,12 +333,12 @@ export const useAppStore = create<AppStore>()(
           events: [...s.events.filter((e) => e.requestId !== req.id), ...eventsForRequest(req)],
         }));
         const when = whenLabel(req.from, req.to);
-        toast.success(existingId ? "Request updated" : "Request submitted", {
-          description: `${req.type} · ${when} is awaiting approval`,
+        toast.success(existingId ? t("Request updated") : t("Request submitted"), {
+          description: t("{type} · {when} is awaiting approval", { type: t(req.type), when }),
         });
         get().notify({
-          title: `${req.type} request submitted`,
-          body: `${when} · ${req.duration}. Your manager has been notified.`,
+          title: t("{type} request submitted", { type: t(req.type) }),
+          body: t("{when} · {duration}. Your manager has been notified.", { when, duration: req.duration }),
           href: "/time-off",
         });
         return req;
@@ -326,15 +357,21 @@ export const useAppStore = create<AppStore>()(
           };
         });
         const verb = { approved: "approved", declined: "declined", cancelled: "cancelled", pending: "reopened" }[status];
-        const message = `Request ${verb}`;
-        const description = `${req.type} · ${formatShort(req.from)}`;
+        const verbLabel = {
+          approved: t("Approved"),
+          declined: t("Declined"),
+          cancelled: t("Cancelled"),
+          reopened: t("Reopened"),
+        }[verb as "approved" | "declined" | "cancelled" | "reopened"];
+        const message = t("Request {status}", { status: verbLabel });
+        const description = `${t(req.type)} · ${formatShort(req.from)}`;
         if (status === "approved") toast.success(message, { description });
         else if (status === "declined") toast.error(message, { description });
         else toast(message, { description });
         if (status === "approved" || status === "declined") {
           get().notify({
-            title: `${req.type} ${verb}`,
-            body: `Your request for ${whenLabel(req.from, req.to)} was ${verb}.`,
+            title: t("{type} {status}", { type: t(req.type), status: verbLabel }),
+            body: t("Your request for {when} was {status}.", { when: whenLabel(req.from, req.to), status: verbLabel }),
             href: "/time-off",
           });
         }
@@ -348,10 +385,10 @@ export const useAppStore = create<AppStore>()(
           requests: s.requests.filter((r) => r.id !== id),
           events: s.events.filter((e) => e.requestId !== id),
         }));
-        toast("Request deleted", {
+        toast(t("Request deleted"), {
           description: req.notes,
           action: {
-            label: "Undo",
+            label: t("Undo"),
             onClick: () =>
               set((s) => ({ requests: [...s.requests, req].sort(bySubmitted), events: [...s.events, ...events] })),
           },
@@ -361,7 +398,7 @@ export const useAppStore = create<AppStore>()(
         set((s) => ({
           holidays: [...s.holidays, { id: uid("ho"), date, name }].sort((a, b) => a.date.localeCompare(b.date)),
         }));
-        toast.success("Holiday added", { description: `${name} · ${formatShort(date)}` });
+        toast.success(t("Holiday added"), { description: `${name} · ${formatShort(date)}` });
       },
       removeHoliday: (id) => set((s) => ({ holidays: s.holidays.filter((h) => h.id !== id) })),
 
@@ -377,7 +414,18 @@ export const useAppStore = create<AppStore>()(
 
       // ------------------------------------------------------------ profile & settings
       updateProfile: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
-      updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
+      updateSettings: (patch) => {
+        const prev = get().settings.language;
+        const next = patch.language ?? prev;
+        if (next === prev) {
+          set((s) => ({ settings: { ...s.settings, ...patch } }));
+          return;
+        }
+        // Switching language re-localises demo content in place; enum values
+        // and user-typed text are left alone by translateData.
+        const localised = translateData(dataSlice(get()), prev, next) as AppState;
+        set({ ...localised, settings: { ...get().settings, ...patch, language: next } });
+      },
 
       // ------------------------------------------------------------ documents
       addDocument: (doc) =>
@@ -388,9 +436,9 @@ export const useAppStore = create<AppStore>()(
         const doc = get().documents.find((d) => d.id === id);
         if (!doc) return;
         set((s) => ({ documents: s.documents.filter((d) => d.id !== id) }));
-        toast("Document deleted", {
+        toast(t("Document deleted"), {
           description: doc.name,
-          action: { label: "Undo", onClick: () => set((s) => ({ documents: [doc, ...s.documents] })) },
+          action: { label: t("Undo"), onClick: () => set((s) => ({ documents: [doc, ...s.documents] })) },
         });
       },
 
@@ -405,11 +453,11 @@ export const useAppStore = create<AppStore>()(
         set((s) => ({
           timer: { ...s.timer, running: false, startedAt: null },
           timeEntries: [
-            { id: uid("te"), date, project: timer.project, task: timer.task || "Untitled task", minutes, billable: true },
+            { id: uid("te"), date, project: timer.project, task: timer.task || t("Untitled task"), minutes, billable: true },
             ...s.timeEntries,
           ],
         }));
-        toast.success("Time logged", { description: `${minutes} min · ${timer.project}` });
+        toast.success(t("Time logged"), { description: t("{minutes} min · {project}", { minutes, project: timer.project }) });
       },
       updateTimer: (patch) => set((s) => ({ timer: { ...s.timer, ...patch } })),
       saveTimeEntry: (entry) => {
@@ -424,9 +472,9 @@ export const useAppStore = create<AppStore>()(
         const entry = get().timeEntries.find((e) => e.id === id);
         if (!entry) return;
         set((s) => ({ timeEntries: s.timeEntries.filter((e) => e.id !== id) }));
-        toast("Entry deleted", {
+        toast(t("Entry deleted"), {
           description: entry.task,
-          action: { label: "Undo", onClick: () => set((s) => ({ timeEntries: [entry, ...s.timeEntries] })) },
+          action: { label: t("Undo"), onClick: () => set((s) => ({ timeEntries: [entry, ...s.timeEntries] })) },
         });
       },
 
@@ -446,9 +494,9 @@ export const useAppStore = create<AppStore>()(
         const inv = get().invoices.find((i) => i.id === id);
         if (!inv) return;
         set((s) => ({ invoices: s.invoices.filter((i) => i.id !== id) }));
-        toast("Invoice deleted", {
+        toast(t("Invoice deleted"), {
           description: inv.number,
-          action: { label: "Undo", onClick: () => set((s) => ({ invoices: [inv, ...s.invoices] })) },
+          action: { label: t("Undo"), onClick: () => set((s) => ({ invoices: [inv, ...s.invoices] })) },
         });
       },
 
@@ -479,8 +527,8 @@ export const useAppStore = create<AppStore>()(
 
       // ------------------------------------------------------------ misc
       resetDemoData: () => {
-        set(createSeed());
-        toast.success("Demo data restored");
+        set(seedFor(get().settings.language));
+        toast.success(t("Demo data restored"));
       },
     };
     },
@@ -497,6 +545,13 @@ export const useAppStore = create<AppStore>()(
           s.workspaces = s.workspaces.map((w) =>
             w.id === "ws-main" && (w.name === "Workspace" || w.name === "Kargul") ? { ...w, name: "Kargul Workspace" } : w,
           );
+        }
+        // v4: the UI ships in Chinese by default; older stores have no language
+        // and hold English demo content.
+        if (version < 4) {
+          const lang = s.settings.language ?? "zh";
+          s.settings = { ...s.settings, language: lang };
+          Object.assign(s, translateData(dataSlice(s), "en", lang));
         }
         return { ...s, version: STATE_VERSION };
       },

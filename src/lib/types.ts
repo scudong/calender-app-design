@@ -16,7 +16,7 @@ export type CalEvent = {
 
 export type LeaveStatus = "approved" | "pending" | "declined" | "cancelled";
 
-export type LeaveType = "Time off" | "Sick" | "Extra leave" | "Half-day leave" | "Personal";
+export type LeaveType = "Time off" | "Sick" | "Extra leave" | "Half-day leave" | "Personal leave";
 
 export type LeaveRequest = {
   id: string;
@@ -54,6 +54,7 @@ export type Profile = {
 };
 
 export type Settings = {
+  language: "zh" | "en";
   weekStartsOn: 0 | 1;
   timeFormat: "24h" | "12h";
   dayStartHour: number;
